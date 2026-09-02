@@ -1,26 +1,50 @@
 package kh.edu.istad.moviebooking.features.movie;
 
+import jakarta.validation.Valid;
 import kh.edu.istad.moviebooking.features.movie.dto.MovieResponse;
+import kh.edu.istad.moviebooking.features.movie.dto.UpdateMovieStatusRequest;
+import kh.edu.istad.moviebooking.intergration.tmdb.TmdbClient;
+import kh.edu.istad.moviebooking.intergration.tmdb.dto.TmdbSearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/movies")
 public class MovieController {
     private final MovieService movieService;
+    private final TmdbClient tmdbClient;
 
-//    get all movies
+    //    get all movies
     @GetMapping
     public List<MovieResponse> getAllMovies() {
         return movieService.getAllMovies();
+    }
+//    get movie by uuid
+    @GetMapping("/{uuid}")
+    MovieResponse getMovieByUuid(@Valid @PathVariable("uuid") UUID uuid){
+        return movieService.getMovieByUuid(uuid);
     }
 //    import movie from TMDB
     @PostMapping("/import/{tmdbId}")
     public MovieResponse importMovie(@PathVariable Long tmdbId) {
         return movieService.importMovie(tmdbId);
     }
+//    update movie status
+    @PatchMapping("/{uuid}/status")
+    public MovieResponse updateMovieStatus(@PathVariable UUID uuid, @RequestBody UpdateMovieStatusRequest updateMovieStatusRequest){
+        return movieService.updateMovieStatus(uuid, updateMovieStatusRequest);
+    }
+//    search movies
+@GetMapping("/search")
+public TmdbSearchResponse search(
+        @RequestParam String query
+) {
+    return tmdbClient.searchMovies(query);
+}
+
 
 }

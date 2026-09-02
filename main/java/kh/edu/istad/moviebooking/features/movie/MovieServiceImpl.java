@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import kh.edu.istad.moviebooking.domain.Movie;
 import kh.edu.istad.moviebooking.domain.enums.MovieStatus;
 import kh.edu.istad.moviebooking.features.movie.dto.MovieResponse;
+import kh.edu.istad.moviebooking.features.movie.dto.UpdateMovieStatusRequest;
 import kh.edu.istad.moviebooking.intergration.tmdb.TmdbClient;
 import kh.edu.istad.moviebooking.intergration.tmdb.dto.search.TmdbMovieDetailResponse;
 import kh.edu.istad.moviebooking.mapper.MovieMapper;
@@ -28,7 +29,16 @@ public class MovieServiceImpl implements MovieService {
         return movieMapper.toMovieResponseList(movies);
     }
 
-//    import movie from tmdb
+//    get movie by uuid
+    @Override
+    public MovieResponse getMovieByUuid(UUID uuid) {
+        // find movie
+        Movie movie = movieRepository.findByUuid(uuid)
+                .orElseThrow(()-> new RuntimeException("Movie not found."));
+        return movieMapper.toMovieResponse(movie);
+    }
+
+    //    import movie from tmdb
     @Override
     @Transactional
     public MovieResponse importMovie(Long tmdbId) {
@@ -57,4 +67,16 @@ public class MovieServiceImpl implements MovieService {
         return movieMapper.toMovieResponse(savedMovie);
     }
 
+//    update status of the movie
+    @Override
+    public MovieResponse updateMovieStatus(UUID uuid, UpdateMovieStatusRequest updateMovieStatusRequest) {
+//        find movie
+        Movie movie = movieRepository.findByUuid(uuid)
+                .orElseThrow(()-> new RuntimeException("Movie not found."));
+        movie.setStatus(updateMovieStatusRequest.status());
+
+        Movie updatedMovie = movieRepository.save(movie);
+
+        return movieMapper.toMovieResponse(updatedMovie);
+    }
 }
