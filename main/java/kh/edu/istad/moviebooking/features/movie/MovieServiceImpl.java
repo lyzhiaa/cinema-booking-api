@@ -3,6 +3,7 @@ package kh.edu.istad.moviebooking.features.movie;
 import jakarta.transaction.Transactional;
 import kh.edu.istad.moviebooking.domain.Movie;
 import kh.edu.istad.moviebooking.domain.enums.MovieStatus;
+import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.movie.dto.MovieResponse;
 import kh.edu.istad.moviebooking.features.movie.dto.UpdateMovieStatusRequest;
 import kh.edu.istad.moviebooking.intergration.tmdb.TmdbClient;
@@ -34,7 +35,13 @@ public class MovieServiceImpl implements MovieService {
     public MovieResponse getMovieByUuid(UUID uuid) {
         // find movie
         Movie movie = movieRepository.findByUuid(uuid)
-                .orElseThrow(()-> new RuntimeException("Movie not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Movie",
+                                "uuid",
+                                uuid
+                        )
+                );
         return movieMapper.toMovieResponse(movie);
     }
 
@@ -72,7 +79,13 @@ public class MovieServiceImpl implements MovieService {
     public MovieResponse updateMovieStatus(UUID uuid, UpdateMovieStatusRequest updateMovieStatusRequest) {
 //        find movie
         Movie movie = movieRepository.findByUuid(uuid)
-                .orElseThrow(()-> new RuntimeException("Movie not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Movie",
+                                "uuid",
+                                uuid
+                        )
+                );
         movie.setStatus(updateMovieStatusRequest.status());
 
         Movie updatedMovie = movieRepository.save(movie);
