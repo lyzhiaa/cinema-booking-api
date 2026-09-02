@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: movie-booking
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/movie_booking_db
+    username: movie_db
+    password: qwer1234
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+tmdb:
+  base-url: https://api.themoviedb.org/3
+  token: eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1ZjgxZDRmMjYyMzE2NjVjZDJiY2RiNmMxYmZlOGExYSIsIm5iZiI6MTc4NzU0Njk3OS41ODcwMDAxLCJzdWIiOiI2YThiY2Q2MzgxNjQzMDdhM2NlMjJmNmUiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.Lj5G-bZxMdYmlXPqc-r3H4PnALKsYIEcgvVblrv7Fo0
