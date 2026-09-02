@@ -4,15 +4,17 @@ import kh.edu.istad.moviebooking.domain.enums.MovieStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record MovieResponse(
         Long id,
+        UUID uuid,
         Long tmdbId,
         String title,
         String originalTitle,
         String overview,
-        String posterPath,
-        String backdropPath,
+        String posterUrl,
+        String backdropUrl,
         Integer runtimeMinutes,
         LocalDate releaseDate,
         String ageRating,

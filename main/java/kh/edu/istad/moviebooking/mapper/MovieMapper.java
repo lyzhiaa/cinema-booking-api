@@ -7,6 +7,7 @@ import kh.edu.istad.moviebooking.intergration.tmdb.dto.TmdbMovieSearchItem;
 import kh.edu.istad.moviebooking.intergration.tmdb.dto.search.TmdbMovieDetailResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,6 +16,16 @@ import java.util.List;
 public interface MovieMapper {
     MovieSearchResponse fromTmdbSearch(TmdbMovieSearchItem tmdbMovieSearchItem);
 //    get movie
+    @Mapping(
+        source = "posterPath",
+        target = "posterUrl",
+        qualifiedByName = "toPosterUrl"
+    )
+    @Mapping(
+        source = "backdropPath",
+        target = "backdropUrl",
+        qualifiedByName = "toBackdropUrl"
+    )
     MovieResponse toMovieResponse(Movie movie);
 //    get all movies
     List<MovieResponse> toMovieResponseList(List<Movie> movies);
@@ -35,5 +46,24 @@ public interface MovieMapper {
         }
 
         return LocalDate.parse(date);
+    }
+    @Named("toPosterUrl")
+    default String toPosterUrl(String path) {
+
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+
+        return "https://image.tmdb.org/t/p/w500" + path;
+    }
+
+    @Named("toBackdropUrl")
+    default String toBackdropUrl(String path) {
+
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+
+        return "https://image.tmdb.org/t/p/w1280" + path;
     }
 }

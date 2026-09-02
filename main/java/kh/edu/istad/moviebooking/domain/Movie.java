@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -17,6 +18,13 @@ public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(
+            nullable = false,
+            unique = true,
+            updatable = false
+    )
+    private UUID uuid;
 
     @Column(name = "tmdb_id", nullable = false, unique = true)
     private Long tmdbId;
@@ -60,6 +68,9 @@ public class Movie {
 
     @PrePersist
     public void onCreate() {
+        if (uuid == null) {
+            uuid = UUID.randomUUID();
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
