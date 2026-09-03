@@ -2,6 +2,7 @@ package kh.edu.istad.moviebooking.domain;
 
 import jakarta.persistence.*;
 import kh.edu.istad.moviebooking.domain.enums.HallStatus;
+import kh.edu.istad.moviebooking.domain.enums.HallType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -36,6 +37,14 @@ public class Hall {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private HallStatus status;
+
+//    update by adding seats
+    @Column(nullable = false)
+    private Integer capacity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hall_type", nullable = false)
+    private HallType hallType;
 
     @Column(
             name = "created_at",

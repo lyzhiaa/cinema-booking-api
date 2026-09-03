@@ -6,7 +6,9 @@ import kh.edu.istad.moviebooking.exception.ResourceAlreadyExistsException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.hall.dto.CreateHallRequest;
 import kh.edu.istad.moviebooking.features.hall.dto.HallResponse;
-import kh.edu.istad.moviebooking.features.hall.dto.UpdateHallRequest;
+import kh.edu.istad.moviebooking.features.hall.dto.HallUpdateRequest;
+import kh.edu.istad.moviebooking.features.hall.dto.UpdateHallStatusRequest;
+import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.mapper.HallMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class HallServiceImpl implements HallService {
     private final HallRepository hallRepository;
     private final HallMapper hallMapper;
+    private final SeatRepository seatRepository;
 
     //    create hall
     @Override
@@ -49,14 +52,16 @@ public class HallServiceImpl implements HallService {
     public HallResponse getHallByUuid(UUID uuid) {
         Hall hall = hallRepository.findHallByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Hall", "uuid", uuid));
+
         return hallMapper.toHallResponse(hall);
     }
 
+//    update hall status
     @Override
     @Transactional
     public HallResponse updateHallStatus(
             UUID uuid,
-            UpdateHallRequest request
+            UpdateHallStatusRequest request
     ) {
 
         Hall hall = hallRepository
@@ -74,6 +79,7 @@ public class HallServiceImpl implements HallService {
         return hallMapper.toHallResponse(hall);
     }
 
+//    TODO: delete hall
     @Override
     public void deleteHall(UUID uuid) {
         Hall hall = hallRepository
@@ -86,6 +92,24 @@ public class HallServiceImpl implements HallService {
                         )
                 );
         hallRepository.delete(hall);
+    }
+
+//    update hall capacity
+    @Override
+    public HallResponse updateHallCapacity(UUID uuid, HallUpdateRequest hallUpdateRequest) {
+        Hall hall = hallRepository
+                .findHallByUuid(uuid)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Hall",
+                                "uuid",
+                                uuid
+                        )
+                );
+
+        hallMapper.fromHallUpdateRequest(hallUpdateRequest, hall);
+        hallRepository.save(hall);
+        return hallMapper.toHallResponse(hall);
     }
 
 }

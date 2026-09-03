@@ -1,6 +1,8 @@
 package kh.edu.istad.moviebooking.domain.enums;
 
-public enum SeatType {
+public enum HallType {
     STANDARD,
-    ACCESSIBLE
+    VIP,
+    IMAX,
+    DOLBY
 }

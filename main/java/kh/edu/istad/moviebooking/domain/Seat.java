@@ -109,4 +109,7 @@ public class Seat {
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seat_group_id")
+    private SeatGroup seatGroup;
 }

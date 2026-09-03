@@ -3,7 +3,6 @@ package kh.edu.istad.moviebooking.features.hall;
 import kh.edu.istad.moviebooking.domain.Hall;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.lang.ScopedValue;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,5 +12,4 @@ public interface HallRepository extends JpaRepository<Hall, Long> {
 //
     boolean existsByNameIgnoreCase(String name);
 
-    <T> ScopedValue<T> findByUuid(UUID uuid);
 }

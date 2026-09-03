@@ -1,6 +1,7 @@
 package kh.edu.istad.moviebooking.features.seat;
 
 import jakarta.validation.Valid;
+import kh.edu.istad.moviebooking.features.seat.dto.BulkCreateSeatRequest;
 import kh.edu.istad.moviebooking.features.seat.dto.CreateSeatRequest;
 import kh.edu.istad.moviebooking.features.seat.dto.SeatResponse;
 import kh.edu.istad.moviebooking.features.seat.dto.UpdateSeatStatusRequest;
@@ -41,5 +42,16 @@ public class SeatController {
             @Valid @RequestBody UpdateSeatStatusRequest updateSeatStatusRequest
     ) {
         return seatService.updateSeatStatus(uuid, updateSeatStatusRequest);
+    }
+
+    @PostMapping("/halls/{hallUuid}/seats/bulk")
+    public List<SeatResponse> createSeatsBulk(
+            @PathVariable UUID hallUuid,
+            @Valid @RequestBody BulkCreateSeatRequest bulkCreateSeatRequest
+    ) {
+        return seatService.createSeatsBulk(
+                hallUuid,
+                bulkCreateSeatRequest
+        );
     }
 }

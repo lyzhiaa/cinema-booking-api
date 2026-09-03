@@ -1,8 +1,10 @@
 package kh.edu.istad.moviebooking.features.hall;
 
+import jakarta.validation.Valid;
 import kh.edu.istad.moviebooking.features.hall.dto.CreateHallRequest;
 import kh.edu.istad.moviebooking.features.hall.dto.HallResponse;
-import kh.edu.istad.moviebooking.features.hall.dto.UpdateHallRequest;
+import kh.edu.istad.moviebooking.features.hall.dto.HallUpdateRequest;
+import kh.edu.istad.moviebooking.features.hall.dto.UpdateHallStatusRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +40,7 @@ public class HallController {
     @PatchMapping("/{uuid}/status")
     public HallResponse updateStatus(
             @PathVariable UUID uuid,
-            @RequestBody UpdateHallRequest updateHallRequest
+            @RequestBody UpdateHallStatusRequest updateHallRequest
     ) {
         return hallService.updateHallStatus(
                 uuid,
@@ -49,5 +51,10 @@ public class HallController {
     @DeleteMapping("/{uuid}")
     void deleteHall(@PathVariable("uuid") UUID uuid) {
         hallService.deleteHall(uuid);
+    }
+//    update hall capacity
+    @PatchMapping("/{uuid}")
+    HallResponse updateHallCapacity(@PathVariable("uuid") UUID uuid, @Valid @RequestBody HallUpdateRequest hallUpdateRequest) {
+        return hallService.updateHallCapacity(uuid, hallUpdateRequest);
     }
 }
