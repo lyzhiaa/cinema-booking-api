@@ -15,4 +15,6 @@ public interface MovieService {
     MovieResponse importMovie(Long tmdbId);
 //    update the status of movie
     MovieResponse updateMovieStatus(UUID uuid, UpdateMovieStatusRequest updateMovieStatusRequest);
+//    delete movie
+    void deleteMovieByUuid(UUID uuid);
 }

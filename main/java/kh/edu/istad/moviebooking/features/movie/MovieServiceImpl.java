@@ -92,4 +92,20 @@ public class MovieServiceImpl implements MovieService {
 
         return movieMapper.toMovieResponse(updatedMovie);
     }
+
+    //    delete movie
+    @Override
+    public void deleteMovieByUuid(UUID uuid) {
+        //        find movie
+        Movie movie = movieRepository.findByUuid(uuid)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Movie",
+                                "uuid",
+                                uuid
+                        )
+                );
+        movieRepository.delete(movie);
+    }
+
 }

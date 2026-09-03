@@ -39,12 +39,17 @@ public class MovieController {
         return movieService.updateMovieStatus(uuid, updateMovieStatusRequest);
     }
 //    search movies
-@GetMapping("/search")
-public TmdbSearchResponse search(
-        @RequestParam String query
-) {
-    return tmdbClient.searchMovies(query);
-}
+    @GetMapping("/search")
+    public TmdbSearchResponse search(
+            @RequestParam String query
+    ) {
+        return tmdbClient.searchMovies(query);
+    }
+//    delete movie
+    @DeleteMapping("/{uuid}")
+    void deleteMovieByUuid(@PathVariable("uuid") UUID uuid) {
+        movieService.deleteMovieByUuid(uuid);
+    }
 
 
 }

@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record MovieResponse(
-        Long id,
         UUID uuid,
         Long tmdbId,
         String title,
