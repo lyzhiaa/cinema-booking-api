@@ -3,12 +3,14 @@ package kh.edu.istad.moviebooking.domain;
 import jakarta.persistence.*;
 import kh.edu.istad.moviebooking.domain.enums.HallStatus;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @Entity
+@NoArgsConstructor
 @Table(name = "halls")
 public class Hall {
     @Id
