@@ -2,17 +2,24 @@ package kh.edu.istad.moviebooking.features.showtime;
 
 import kh.edu.istad.moviebooking.domain.Hall;
 import kh.edu.istad.moviebooking.domain.Movie;
+import kh.edu.istad.moviebooking.domain.Seat;
 import kh.edu.istad.moviebooking.domain.Showtime;
 import kh.edu.istad.moviebooking.domain.enums.HallStatus;
+import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
+import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
 import kh.edu.istad.moviebooking.domain.enums.ShowtimeStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.hall.HallRepository;
 import kh.edu.istad.moviebooking.features.movie.MovieRepository;
+import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.showtime.dto.CreateShowtimeRequest;
 import kh.edu.istad.moviebooking.features.showtime.dto.ShowtimeResponse;
+import kh.edu.istad.moviebooking.features.showtime.dto.ShowtimeSeatResponse;
 import kh.edu.istad.moviebooking.mapper.ShowtimeMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,8 +33,11 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     private final MovieRepository movieRepository;
     private final HallRepository hallRepository;
     private final ShowtimeMapper showtimeMapper;
+    private final SeatRepository seatRepository;
+//  for connect Redis holds to Showtime seat map
+    private final StringRedisTemplate stringRedisTemplate;
 
-//    create showtime
+    //    create showtime
     @Override
     public ShowtimeResponse createShowtime(CreateShowtimeRequest createShowtimeRequest) {
 //        find movie
@@ -88,9 +98,7 @@ public class ShowtimeServiceImpl implements ShowtimeService {
 
 
     @Override
-    public ShowtimeResponse getShowTimeByUuid(
-            UUID uuid
-    ) {
+    public ShowtimeResponse getShowTimeByUuid(UUID uuid) {
 
         Showtime showtime = showtimeRepository.findShowtimeByUuid(uuid).orElseThrow(
                 () -> new ResourceNotFoundException("Showtime", "uuid", uuid));
@@ -98,4 +106,71 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         return showtimeMapper
                 .toShowtimeResponse(showtime);
     }
+
+//    get showtime seat
+    @Override
+    public List<ShowtimeSeatResponse> getShowtimeSeats(UUID showtimeUuid) {
+//        find show time
+        Showtime showtime = showtimeRepository.findShowtimeByUuid(showtimeUuid).orElseThrow(
+                () -> new ResourceNotFoundException("Showtime", "uuid", showtimeUuid)
+        );
+//        get the hall from the showtime
+        Hall hall = showtime.getHall();
+//        get all seats belonging to the hall
+        List<Seat> seats = seatRepository.findAllSeatByHallUuidOrderByRowLabelAscSeatNumberAsc(hall.getUuid());
+//        convert seat status into show time seat available
+        return seats.stream().map(seat -> {
+            SeatAvailabilityStatus availability;
+//            if(seat.getStatus() == SeatStatus.ACTIVE) {
+//                availabilityStatus = SeatAvailabilityStatus.AVAILABLE;
+//            }else {
+//                availabilityStatus = SeatAvailabilityStatus.UNAVAILABLE;
+//            }
+//            check seat is available or not
+            if(seat.getStatus() != SeatStatus.ACTIVE) {
+                availability= SeatAvailabilityStatus.UNAVAILABLE;
+            } else {
+//                for seat is available
+                String holdKey = buildSeatHoldKey(showtimeUuid, seat.getUuid());
+
+                Boolean isHeld = stringRedisTemplate.hasKey(holdKey);
+
+//                System.out.println(
+//                        "Seat = " + seat.getSeatLabel()
+//                                + " | key = " + holdKey
+//                                + " | held = " + isHeld
+//                );
+
+                if (Boolean.TRUE.equals(isHeld)) {
+                    availability = SeatAvailabilityStatus.HELD;
+                } else {
+                    availability = SeatAvailabilityStatus.AVAILABLE;
+                }
+
+            }
+            UUID groupUuid = null;
+
+            if (seat.getSeatGroup() != null) {
+                groupUuid = seat.getSeatGroup().getUuid();
+            }
+
+            return new ShowtimeSeatResponse(
+                    seat.getUuid(),
+                    groupUuid,
+                    seat.getRowLabel(),
+                    seat.getSeatNumber(),
+                    seat.getSeatLabel(),
+                    seat.getSeatType(),
+                    availability
+            );
+        }).toList();
+    }
+
+//    helper for Redis key
+private String buildSeatHoldKey(UUID showtimeUuid, UUID seatUuid) {
+    return "seat:hold:"
+            + showtimeUuid
+            + ":"
+            + seatUuid;
+}
 }
