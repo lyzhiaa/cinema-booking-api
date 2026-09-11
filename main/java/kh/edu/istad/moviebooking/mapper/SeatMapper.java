@@ -15,6 +15,10 @@ public interface SeatMapper {
             source = "hall.uuid",
             target = "hallUuid"
     )
+    @Mapping(
+            source = "seatGroup.uuid",
+            target = "groupUuid"
+    )
     SeatResponse toSeatResponse(Seat seat);
 //    get all seats
     List<SeatResponse> toSeatResponseList(List<Seat> seats);
@@ -22,6 +26,7 @@ public interface SeatMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "uuid", ignore = true)
     @Mapping(target = "hall", ignore = true)
+    @Mapping(target = "seatGroup", ignore = true)
     @Mapping(target = "seatLabel", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

@@ -5,6 +5,8 @@ import kh.edu.istad.moviebooking.features.seat.dto.BulkCreateSeatRequest;
 import kh.edu.istad.moviebooking.features.seat.dto.CreateSeatRequest;
 import kh.edu.istad.moviebooking.features.seat.dto.SeatResponse;
 import kh.edu.istad.moviebooking.features.seat.dto.UpdateSeatStatusRequest;
+import kh.edu.istad.moviebooking.features.seatGroup.dto.CoupleSeatResponse;
+import kh.edu.istad.moviebooking.features.seatGroup.dto.CreateCoupleSeatRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,6 +54,15 @@ public class SeatController {
         return seatService.createSeatsBulk(
                 hallUuid,
                 bulkCreateSeatRequest
+        );
+    }
+
+    @PostMapping("/halls/{hallUuid}/seats/couple")
+    public CoupleSeatResponse createCoupleSeat(@PathVariable UUID hallUuid, @Valid @RequestBody CreateCoupleSeatRequest createCoupleSeatRequest) {
+
+        return seatService.createCoupleSeat(
+                hallUuid,
+                createCoupleSeatRequest
         );
     }
 }

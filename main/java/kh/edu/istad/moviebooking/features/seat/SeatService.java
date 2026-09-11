@@ -4,6 +4,8 @@ import kh.edu.istad.moviebooking.features.seat.dto.BulkCreateSeatRequest;
 import kh.edu.istad.moviebooking.features.seat.dto.CreateSeatRequest;
 import kh.edu.istad.moviebooking.features.seat.dto.SeatResponse;
 import kh.edu.istad.moviebooking.features.seat.dto.UpdateSeatStatusRequest;
+import kh.edu.istad.moviebooking.features.seatGroup.dto.CoupleSeatResponse;
+import kh.edu.istad.moviebooking.features.seatGroup.dto.CreateCoupleSeatRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,4 +25,6 @@ public interface SeatService {
 
 //    update seat
     SeatResponse updateSeatStatus(UUID uuid, UpdateSeatStatusRequest updateSeatStatusRequest);
+//    create couple seat
+    CoupleSeatResponse createCoupleSeat(UUID hallUuid, CreateCoupleSeatRequest createCoupleSeatRequest);
 }

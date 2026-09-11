@@ -21,4 +21,6 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
 
     long countByHallUuid(UUID hallUuid);
 
+    List<Seat> findAllSeatBySeatGroupUuid(UUID seatGroupUuid);
+
 }

@@ -11,6 +11,8 @@ public record SeatResponse(
 
         UUID hallUuid,
 
+        UUID groupUuid,
+
         String rowLabel,
 
         Integer seatNumber,
@@ -21,9 +23,9 @@ public record SeatResponse(
 
         SeatStatus status,
 
-        Integer xPosition,
-
-        Integer yPosition,
+//        Integer xPosition,
+//
+//        Integer yPosition,
 
         LocalDateTime createdAt,
 

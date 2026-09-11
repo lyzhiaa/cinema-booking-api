@@ -3,12 +3,18 @@ package kh.edu.istad.moviebooking.features.seat;
 import jakarta.transaction.Transactional;
 import kh.edu.istad.moviebooking.domain.Hall;
 import kh.edu.istad.moviebooking.domain.Seat;
+import kh.edu.istad.moviebooking.domain.SeatGroup;
+import kh.edu.istad.moviebooking.domain.enums.SeatGroupType;
 import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
+import kh.edu.istad.moviebooking.domain.enums.SeatType;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceAlreadyExistsException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.hall.HallRepository;
 import kh.edu.istad.moviebooking.features.seat.dto.*;
+import kh.edu.istad.moviebooking.features.seatGroup.SeatGroupRepository;
+import kh.edu.istad.moviebooking.features.seatGroup.dto.CoupleSeatResponse;
+import kh.edu.istad.moviebooking.features.seatGroup.dto.CreateCoupleSeatRequest;
 import kh.edu.istad.moviebooking.mapper.SeatMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +29,7 @@ public class SeatServiceImpl implements SeatService {
     private final SeatRepository seatRepository;
     private final HallRepository hallRepository;
     private final SeatMapper seatMapper;
+    private final SeatGroupRepository seatGroupRepository;
 
     @Override
     @Transactional
@@ -183,5 +190,103 @@ public class SeatServiceImpl implements SeatService {
         seat.setStatus(updateSeatStatusRequest.status());
 
         return seatMapper.toSeatResponse(seat);
+    }
+
+//    create couple seat
+    @Override
+    @Transactional
+    public CoupleSeatResponse createCoupleSeat(UUID hallUuid, CreateCoupleSeatRequest createCoupleSeatRequest) {
+        Hall hall = hallRepository.findHallByUuid(hallUuid).orElseThrow(() -> new ResourceNotFoundException(
+                "Hall",
+                "uuid",
+                hallUuid
+        ));
+//        couple seat always creates 2 physical seats
+        long currentSeats = seatRepository.countByHallUuid(hallUuid);
+
+        if (currentSeats + 2 > hall.getCapacity()) {
+            throw new BadRequestException(
+                    "Hall does not have enough capacity "
+                            + "for a couple seat"
+            );
+        }
+
+        String rowLabel = createCoupleSeatRequest.rowLabel().trim().toUpperCase();
+
+        int firstNumber = createCoupleSeatRequest.firstSeatNumber();
+
+        int secondNumber = firstNumber + 1;
+
+        String firstLabel = rowLabel + firstNumber;
+
+        String secondLabel = rowLabel + secondNumber;
+
+        // Check first seat
+        if (seatRepository.existsByHallUuidAndSeatLabel(hallUuid, firstLabel)) {
+
+            throw new ResourceAlreadyExistsException(
+                    "Seat",
+                    "seatLabel",
+                    firstLabel
+            );
+        }
+
+        // Check second seat
+        if (seatRepository.existsByHallUuidAndSeatLabel(hallUuid, secondLabel)) {
+
+            throw new ResourceAlreadyExistsException(
+                    "Seat",
+                    "seatLabel",
+                    secondLabel
+            );
+        }
+
+        String groupLabel = firstLabel + "-" + secondLabel;
+
+        SeatGroup group = SeatGroup.builder()
+                .hall(hall)
+                .label(groupLabel)
+                .type(SeatGroupType.COUPLE)
+                .build();
+
+        SeatGroup savedGroup =
+                seatGroupRepository.save(group);
+
+        Seat firstSeat = Seat
+                .builder()
+                .hall(hall)
+                .seatGroup(savedGroup)
+                .rowLabel(rowLabel)
+                .seatNumber(firstNumber)
+                .seatLabel(firstLabel)
+                .seatType(SeatType.STANDARD)
+                .status(SeatStatus.ACTIVE)
+                .build();
+
+        Seat secondSeat = Seat
+                .builder()
+                .hall(hall)
+                .seatGroup(savedGroup)
+                .rowLabel(rowLabel)
+                .seatNumber(secondNumber)
+                .seatLabel(secondLabel)
+                .seatType(SeatType.STANDARD)
+                .status(SeatStatus.ACTIVE)
+                .build();
+
+        List<Seat> savedSeats =
+                seatRepository.saveAll(
+                        List.of(
+                                firstSeat,
+                                secondSeat
+                        )
+                );
+
+        return new CoupleSeatResponse(
+                savedGroup.getUuid(),
+                savedGroup.getLabel(),
+                savedGroup.getType(),
+                seatMapper.toSeatResponseList(savedSeats)
+        );
     }
 }

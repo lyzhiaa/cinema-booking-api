@@ -2,6 +2,8 @@ package kh.edu.istad.moviebooking.domain;
 
 import jakarta.persistence.*;
 import kh.edu.istad.moviebooking.domain.enums.SeatGroupType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +13,8 @@ import java.util.UUID;
 @Entity
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(
         name = "seat_groups",
         uniqueConstraints = {
