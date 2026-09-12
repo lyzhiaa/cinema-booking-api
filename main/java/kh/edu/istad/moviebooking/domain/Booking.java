@@ -58,6 +58,12 @@ public class Booking {
     )
     private BigDecimal totalAmount;
 
+    @Column(
+            name = "payment_expires_at",
+            nullable = false
+    )
+    private LocalDateTime paymentExpiresAt;
+
 
     @Column(
             name = "created_at",

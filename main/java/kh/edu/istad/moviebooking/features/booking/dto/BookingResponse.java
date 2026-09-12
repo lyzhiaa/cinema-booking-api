@@ -24,6 +24,8 @@ public record BookingResponse(
 
         List<BookingSeatResponse> seats,
 
+        LocalDateTime paymentExpiresAt,
+
         LocalDateTime createdAt
 
 ) {

@@ -18,6 +18,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -109,12 +110,12 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal totalAmount = unitPrice.multiply(BigDecimal.valueOf(seats.size()));
 
         // 6. Create ONE Booking
-        Booking booking =
-                Booking.builder()
+        Booking booking = Booking.builder()
                         .showtime(showtime)
                         .holdId(createBookingRequest.holdId())
                         .status(BookingStatus.PENDING_PAYMENT)
                         .totalAmount(totalAmount)
+                        .paymentExpiresAt(LocalDateTime.now().plusMinutes(10))
                         .build();
 
 
@@ -164,21 +165,42 @@ public class BookingServiceImpl implements BookingService {
         return bookingMapper.toBookingResponse(savedBooking, bookingSeats);
     }
 
+//    get booking by uuid
         @Override
+        @Transactional
         public BookingResponse getBookingByUuid (UUID bookingUuid){
-            Booking booking = bookingRepository.findBookingByUuid(bookingUuid).orElseThrow(
-                    () -> new ResourceNotFoundException(
+//        finding the booking
+            Booking booking = bookingRepository.findBookingByUuid(bookingUuid).orElseThrow
+                    (() -> new ResourceNotFoundException(
                             "Booking",
                             "uuid",
                             bookingUuid
                     )
             );
 
+            //  Check whether unpaid booking has expired
+            expireBookingIfNeeded(booking);
 
+            // get booking seats
             List<BookingSeat> bookingSeats = bookingSeatRepository.findAllBookingSeatByBookingUuid(bookingUuid);
 
             return bookingMapper.toBookingResponse(booking, bookingSeats);
         }
+
+//        expiration method
+    @Transactional
+    public void expirePendingBookings() {
+        List<Booking> expiredBookings = bookingRepository.findAllByStatusAndPaymentExpiresAtBefore(
+                BookingStatus.PENDING_PAYMENT,
+                LocalDateTime.now()
+        );
+
+        for (Booking booking : expiredBookings) {
+            booking.setStatus(BookingStatus.EXPIRED);
+
+            seatReservationRepository.deleteAllByBookingUuid(booking.getUuid());
+        }
+    }
 
     private String buildHoldSeatsKey(UUID showtimeUuid, UUID holdId) {
         return "hold:seats:"
@@ -192,6 +214,15 @@ public class BookingServiceImpl implements BookingService {
                 + showtimeUuid
                 + ":"
                 + seatUuid;
+    }
+
+//    check when booking is success
+    private void expireBookingIfNeeded(Booking booking) {
+        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT && booking.getPaymentExpiresAt().isBefore(LocalDateTime.now())) {
+            booking.setStatus(BookingStatus.EXPIRED);
+
+            seatReservationRepository.deleteAllByBookingUuid(booking.getUuid());
+        }
     }
 
 }
