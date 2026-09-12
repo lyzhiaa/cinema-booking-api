@@ -2,9 +2,11 @@ package kh.edu.istad.moviebooking.features.seatHold;
 
 import kh.edu.istad.moviebooking.domain.Seat;
 import kh.edu.istad.moviebooking.domain.Showtime;
+import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.booking.BookingSeatRepository;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.dto.CreateSeatHoldRequest;
 import kh.edu.istad.moviebooking.features.seatHold.dto.SeatHoldResponse;
@@ -25,6 +27,8 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
     private final ShowTimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
+
+    private final BookingSeatRepository bookingSeatRepository;
 
 
     @Override
@@ -72,19 +76,13 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                 // Add BOTH seats
                 for (Seat groupSeat : groupSeats) {
 
-                    seatsToHold.put(
-                            groupSeat.getUuid(),
-                            groupSeat
-                    );
+                    seatsToHold.put(groupSeat.getUuid(), groupSeat);
                 }
 
             } else {
 
                 // Normal seat
-                seatsToHold.put(
-                        seat.getUuid(),
-                        seat
-                );
+                seatsToHold.put(seat.getUuid(), seat);
             }
         }
 
@@ -117,7 +115,17 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                                 + " is not available"
                 );
             }
+            //        seat must not already be booked
+            boolean isBooked = bookingSeatRepository.existsByBookingShowtimeUuidAndSeatUuidAndBookingStatusIn(
+                    showtimeUuid, seat.getUuid(), List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED)
+            );
+            if (isBooked) {
+
+                throw new BadRequestException("Seat " + seat.getSeatLabel() + " is already booked");
+            }
         }
+
+
 
 
         // =====================================================

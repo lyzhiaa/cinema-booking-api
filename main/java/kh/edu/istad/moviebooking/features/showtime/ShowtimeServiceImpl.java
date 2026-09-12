@@ -4,12 +4,10 @@ import kh.edu.istad.moviebooking.domain.Hall;
 import kh.edu.istad.moviebooking.domain.Movie;
 import kh.edu.istad.moviebooking.domain.Seat;
 import kh.edu.istad.moviebooking.domain.Showtime;
-import kh.edu.istad.moviebooking.domain.enums.HallStatus;
-import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
-import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
-import kh.edu.istad.moviebooking.domain.enums.ShowtimeStatus;
+import kh.edu.istad.moviebooking.domain.enums.*;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.booking.BookingSeatRepository;
 import kh.edu.istad.moviebooking.features.hall.HallRepository;
 import kh.edu.istad.moviebooking.features.movie.MovieRepository;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
@@ -18,7 +16,6 @@ import kh.edu.istad.moviebooking.features.showtime.dto.ShowtimeResponse;
 import kh.edu.istad.moviebooking.features.showtime.dto.ShowtimeSeatResponse;
 import kh.edu.istad.moviebooking.mapper.ShowtimeMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +33,8 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     private final SeatRepository seatRepository;
 //  for connect Redis holds to Showtime seat map
     private final StringRedisTemplate stringRedisTemplate;
+
+    private final BookingSeatRepository bookingSeatRepository;
 
     //    create showtime
     @Override
@@ -127,26 +126,44 @@ public class ShowtimeServiceImpl implements ShowtimeService {
 //                availabilityStatus = SeatAvailabilityStatus.UNAVAILABLE;
 //            }
 //            check seat is available or not
-            if(seat.getStatus() != SeatStatus.ACTIVE) {
-                availability= SeatAvailabilityStatus.UNAVAILABLE;
+            if (seat.getStatus() != SeatStatus.ACTIVE) {
+
+                availability =
+                        SeatAvailabilityStatus.UNAVAILABLE;
+
             } else {
-//                for seat is available
-                String holdKey = buildSeatHoldKey(showtimeUuid, seat.getUuid());
 
-                Boolean isHeld = stringRedisTemplate.hasKey(holdKey);
+                // 1. Check PostgreSQL first
+                boolean isBooked =
+                        bookingSeatRepository
+                                .existsByBookingShowtimeUuidAndSeatUuidAndBookingStatusIn(
+                                        showtimeUuid,
+                                        seat.getUuid(),
+                                        List.of(
+                                                BookingStatus.PENDING_PAYMENT,
+                                                BookingStatus.CONFIRMED
+                                        )
+                                );
 
-//                System.out.println(
-//                        "Seat = " + seat.getSeatLabel()
-//                                + " | key = " + holdKey
-//                                + " | held = " + isHeld
-//                );
+                if (isBooked) {
+                    availability = SeatAvailabilityStatus.BOOKED;
 
-                if (Boolean.TRUE.equals(isHeld)) {
-                    availability = SeatAvailabilityStatus.HELD;
                 } else {
-                    availability = SeatAvailabilityStatus.AVAILABLE;
-                }
 
+                    // 2. If not booked, check temporary Redis hold
+                    String holdKey = buildSeatHoldKey(showtimeUuid, seat.getUuid());
+
+                    Boolean isHeld = stringRedisTemplate.hasKey(holdKey);
+
+                    if (Boolean.TRUE.equals(isHeld)) {
+
+                        availability = SeatAvailabilityStatus.HELD;
+
+                    } else {
+
+                        availability = SeatAvailabilityStatus.AVAILABLE;
+                    }
+                }
             }
             UUID groupUuid = null;
 
