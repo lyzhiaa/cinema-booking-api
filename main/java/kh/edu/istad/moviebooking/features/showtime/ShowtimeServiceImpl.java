@@ -11,6 +11,7 @@ import kh.edu.istad.moviebooking.features.booking.BookingSeatRepository;
 import kh.edu.istad.moviebooking.features.hall.HallRepository;
 import kh.edu.istad.moviebooking.features.movie.MovieRepository;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
+import kh.edu.istad.moviebooking.features.seatReservation.SeatReservationRepository;
 import kh.edu.istad.moviebooking.features.showtime.dto.CreateShowtimeRequest;
 import kh.edu.istad.moviebooking.features.showtime.dto.ShowtimeResponse;
 import kh.edu.istad.moviebooking.features.showtime.dto.ShowtimeSeatResponse;
@@ -35,6 +36,7 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     private final StringRedisTemplate stringRedisTemplate;
 
     private final BookingSeatRepository bookingSeatRepository;
+    private final SeatReservationRepository seatReservationRepository;
 
     //    create showtime
     @Override
@@ -134,16 +136,7 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             } else {
 
                 // 1. Check PostgreSQL first
-                boolean isBooked =
-                        bookingSeatRepository
-                                .existsByBookingShowtimeUuidAndSeatUuidAndBookingStatusIn(
-                                        showtimeUuid,
-                                        seat.getUuid(),
-                                        List.of(
-                                                BookingStatus.PENDING_PAYMENT,
-                                                BookingStatus.CONFIRMED
-                                        )
-                                );
+                boolean isBooked = seatReservationRepository.existsByShowtimeUuidAndSeatUuid(showtimeUuid, seat.getUuid());
 
                 if (isBooked) {
                     availability = SeatAvailabilityStatus.BOOKED;

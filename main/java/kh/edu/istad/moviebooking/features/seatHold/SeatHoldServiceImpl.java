@@ -2,14 +2,13 @@ package kh.edu.istad.moviebooking.features.seatHold;
 
 import kh.edu.istad.moviebooking.domain.Seat;
 import kh.edu.istad.moviebooking.domain.Showtime;
-import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
-import kh.edu.istad.moviebooking.features.booking.BookingSeatRepository;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.dto.CreateSeatHoldRequest;
 import kh.edu.istad.moviebooking.features.seatHold.dto.SeatHoldResponse;
+import kh.edu.istad.moviebooking.features.seatReservation.SeatReservationRepository;
 import kh.edu.istad.moviebooking.features.showtime.ShowTimeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,7 +27,7 @@ public class SeatHoldServiceImpl implements SeatHoldService {
     private final ShowTimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
 
-    private final BookingSeatRepository bookingSeatRepository;
+    private final SeatReservationRepository seatReservationRepository;
 
 
     @Override
@@ -42,9 +41,7 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                                 showtimeUuid
                         )
                 );
-// =====================================================
-// 2. NEW: Resolve normal seats + couple seats
-// =====================================================
+//  NEW: Resolve normal seats + couple seats
 
         Map<UUID, Seat> seatsToHold = new LinkedHashMap<>();
 
@@ -61,35 +58,25 @@ public class SeatHoldServiceImpl implements SeatHoldService {
             // Check whether this seat belongs to a couple group
             if (seat.getSeatGroup() != null) {
 
-                List<Seat> groupSeats =
-                        seatRepository.findAllSeatBySeatGroupUuid(
-                                seat.getSeatGroup().getUuid()
-                        );
+                List<Seat> groupSeats = seatRepository.findAllSeatBySeatGroupUuid(seat.getSeatGroup().getUuid());
 
                 // Couple group must contain exactly 2 seats
                 if (groupSeats.size() != 2) {
-                    throw new BadRequestException(
-                            "Invalid couple seat configuration"
-                    );
+                    throw new BadRequestException("Invalid couple seat configuration");
                 }
 
                 // Add BOTH seats
                 for (Seat groupSeat : groupSeats) {
-
                     seatsToHold.put(groupSeat.getUuid(), groupSeat);
                 }
 
             } else {
-
                 // Normal seat
                 seatsToHold.put(seat.getUuid(), seat);
             }
         }
 
-
-        // =====================================================
-        // 3. Validate ALL actual seats
-        // =====================================================
+        // Validate ALL actual seats
 
         for (Seat seat : seatsToHold.values()) {
 
@@ -99,9 +86,7 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                     .equals(showtime.getHall().getUuid())) {
 
                 throw new BadRequestException(
-                        "Seat "
-                                + seat.getSeatLabel()
-                                + " does not belong to the showtime hall"
+                        "Seat " + seat.getSeatLabel() + " does not belong to the showtime hall"
                 );
             }
 
@@ -109,28 +94,16 @@ public class SeatHoldServiceImpl implements SeatHoldService {
             // Physical seat must be usable
             if (seat.getStatus() != SeatStatus.ACTIVE) {
 
-                throw new BadRequestException(
-                        "Seat "
-                                + seat.getSeatLabel()
-                                + " is not available"
-                );
+                throw new BadRequestException("Seat " + seat.getSeatLabel() + " is not available");
             }
             //        seat must not already be booked
-            boolean isBooked = bookingSeatRepository.existsByBookingShowtimeUuidAndSeatUuidAndBookingStatusIn(
-                    showtimeUuid, seat.getUuid(), List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED)
-            );
+            boolean isBooked = seatReservationRepository.existsByShowtimeUuidAndSeatUuid(showtimeUuid, seat.getUuid());
             if (isBooked) {
-
                 throw new BadRequestException("Seat " + seat.getSeatLabel() + " is already booked");
             }
         }
 
-
-
-
-        // =====================================================
-        // 4. Generate ONE holdId for all selected seats
-        // =====================================================
+        // Generate ONE holdId for all selected seats
 
         UUID holdId = UUID.randomUUID();
 
@@ -139,25 +112,15 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         // Used for rollback if one seat fails
         List<String> acquiredKeys = new ArrayList<>();
 
-
-        // =====================================================
-        // 5. Hold actual seats in Redis
-        // =====================================================
+        // Hold actual seats in Redis
 
         for (Seat seat : seatsToHold.values()) {
 
-            String key = buildSeatHoldKey(
-                    showtimeUuid,
-                    seat.getUuid()
-            );
+            String key = buildSeatHoldKey(showtimeUuid, seat.getUuid());
 
             Boolean success = redisTemplate
                     .opsForValue()
-                    .setIfAbsent(
-                            key,
-                            holdId.toString(),
-                            HOLD_DURATION
-                    );
+                    .setIfAbsent(key, holdId.toString(), HOLD_DURATION);
 
 
             if (!Boolean.TRUE.equals(success)) {
@@ -169,18 +132,14 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                 }
 
                 throw new BadRequestException(
-                        "Seat "
-                                + seat.getSeatLabel()
-                                + " is currently held"
+                        "Seat " + seat.getSeatLabel() + " is currently held"
                 );
             }
 
 
             acquiredKeys.add(key);
 
-            heldSeatUuids.add(
-                    seat.getUuid()
-            );
+            heldSeatUuids.add(seat.getUuid());
         }
 
 
@@ -198,12 +157,7 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
         redisTemplate.expire(holdSeatsKey, HOLD_DURATION);
 
-        return new SeatHoldResponse(
-                holdId,
-                showtimeUuid,
-                heldSeatUuids,
-                HOLD_DURATION.toSeconds()
-        );
+        return new SeatHoldResponse(holdId, showtimeUuid, heldSeatUuids, HOLD_DURATION.toSeconds());
 
     }
 
