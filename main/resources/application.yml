@@ -21,6 +21,16 @@ spring:
       host: localhost
       port: 6379
       database: 0
+
+#bakong:
+#  base-url: https://api-bakong.nbc.gov.kh
+#  token: ${BAKONG_TOKEN} #
+#  account-id: ${BAKONG_ACCOUNT_ID} #
+#  merchant-id: ${BAKONG_MERCHANT_ID}
+#  merchant-name: ${BAKONG_MERCHANT_NAME} #
+#  acquiring-bank: ${BAKONG_ACQUIRING_BANK}
+
+
 tmdb:
   base-url: https://api.themoviedb.org/3
   token: eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1ZjgxZDRmMjYyMzE2NjVjZDJiY2RiNmMxYmZlOGExYSIsIm5iZiI6MTc4NzU0Njk3OS41ODcwMDAxLCJzdWIiOiI2YThiY2Q2MzgxNjQzMDdhM2NlMjJmNmUiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.Lj5G-bZxMdYmlXPqc-r3H4PnALKsYIEcgvVblrv7Fo0
