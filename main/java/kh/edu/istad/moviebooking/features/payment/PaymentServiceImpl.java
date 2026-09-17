@@ -7,8 +7,15 @@ import kh.edu.istad.moviebooking.domain.enums.PaymentMethod;
 import kh.edu.istad.moviebooking.domain.enums.PaymentStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.bakong.BakongClient;
+import kh.edu.istad.moviebooking.features.bakong.dto.BakongCheckTransactionResponse;
+import kh.edu.istad.moviebooking.features.bakong.dto.BakongKhqrResult;
+import kh.edu.istad.moviebooking.features.bakong.BakongKhqrService;
+import kh.edu.istad.moviebooking.features.bakong.dto.BakongTransactionData;
 import kh.edu.istad.moviebooking.features.booking.BookingRepository;
 import kh.edu.istad.moviebooking.features.payment.dto.PaymentResponse;
+import kh.edu.istad.moviebooking.features.ticket.TicketService;
+import kh.edu.istad.moviebooking.intergration.bakong.BakongProperties;
 import kh.edu.istad.moviebooking.mapper.PaymentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,19 +33,33 @@ public class PaymentServiceImpl implements PaymentService {
 //    mapper
     private final PaymentMapper paymentMapper;
 
+    private final TicketService ticketService;
+
+    private final BakongKhqrService bakongKhqrService;
+    private final BakongClient bakongClient;
+    private final BakongProperties bakongProperties;
+
 
     @Override
     @Transactional
     public PaymentResponse createPayment(UUID bookingUuid) {
-//        find booking
-        Booking booking = bookingRepository.findBookingByUuid(bookingUuid).orElseThrow(
-                () -> new ResourceNotFoundException("Booking", "uuid", bookingUuid)
-        );
 
-        if(booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new BadRequestException("Booking is not waiting for payment");
+        Booking booking = bookingRepository
+                .findBookingByUuid(bookingUuid)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Booking",
+                                "uuid",
+                                bookingUuid
+                        )
+                );
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new BadRequestException(
+                    "Booking is not waiting for payment"
+            );
         }
-        // Check whether payment time already passed
+
         if (
                 booking.getPaymentExpiresAt() != null
                         && booking.getPaymentExpiresAt()
@@ -48,14 +69,33 @@ public class PaymentServiceImpl implements PaymentService {
                     "Booking has expired"
             );
         }
+
+        // Add it HERE
+        String billNumber =
+                "BOOK-" +
+                        booking.getUuid()
+                                .toString()
+                                .substring(0, 12);
+
+        // Then use it here
+        BakongKhqrResult khqr =
+                bakongKhqrService.generateKhqr(
+                        booking.getTotalAmount(),
+                        booking.getPaymentExpiresAt(),
+                        billNumber
+                );
+
         Payment payment = Payment.builder()
                 .booking(booking)
                 .amount(booking.getTotalAmount())
-                .paymentMethod(PaymentMethod.KHQR)
                 .status(PaymentStatus.PENDING)
+                .paymentMethod(PaymentMethod.KHQR)
+                .providerReference(khqr.md5())
+                .qrPayload(khqr.qr())
                 .build();
 
         paymentRepository.save(payment);
+
         return paymentMapper.toPaymentResponse(payment);
     }
 
@@ -92,7 +132,15 @@ public class PaymentServiceImpl implements PaymentService {
 
         payment.setTransactionReference("TEST-" + UUID.randomUUID());
 
+        payment.setPaidAt(LocalDateTime.now());
+
         booking.setStatus(BookingStatus.CONFIRMED);
+
+// Only now generate tickets
+        ticketService.generateTicketsForBooking(booking.getUuid());
+
+        paymentRepository.saveAndFlush(payment);
+        bookingRepository.saveAndFlush(booking);
 
         return paymentMapper.toPaymentResponse(payment);
     }
@@ -128,6 +176,72 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         payment.setStatus(PaymentStatus.FAILED);
+
+        return paymentMapper.toPaymentResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse verifyBakongPayment(UUID paymentUuid) {
+
+        Payment payment = paymentRepository.findPaymentByUuid(paymentUuid)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                        "Payment",
+                                        "uuid",
+                                        paymentUuid
+                                )
+                        );
+
+        Booking booking = payment.getBooking();
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS
+        ) {
+            return paymentMapper.toPaymentResponse(payment);
+        }
+
+        if (booking.getStatus() == BookingStatus.EXPIRED) {
+            throw new BadRequestException("Booking has expired");
+        }
+
+        BakongCheckTransactionResponse response = bakongClient.checkTransactionByMd5(payment.getProviderReference());
+
+        // Not paid yet
+        if (response == null || response.responseCode() == null || response.responseCode() != 0 || response.data() == null) {
+
+            return paymentMapper.toPaymentResponse(payment);
+        }
+
+        BakongTransactionData transaction = response.data();
+
+        // IMPORTANT: validate amount
+        if (transaction.amount().compareTo(payment.getAmount()) != 0) {
+            throw new BadRequestException("Payment amount does not match");
+        }
+
+        // Validate receiver
+        if (!bakongProperties.getAccountId().equalsIgnoreCase(transaction.toAccountId())) {
+            throw new BadRequestException("Payment receiver does not match");
+        }
+
+        // Validate currency
+        if (!bakongProperties.getCurrency().equalsIgnoreCase(transaction.currency())) {
+            throw new BadRequestException("Payment currency does not match");
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+
+        payment.setTransactionReference(transaction.hash());
+
+        payment.setPaidAt(LocalDateTime.now());
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        // Your existing cinema ticket generation
+        ticketService.generateTicketsForBooking(booking.getUuid());
+
+        paymentRepository.saveAndFlush(payment);
+
+        bookingRepository.saveAndFlush(booking);
 
         return paymentMapper.toPaymentResponse(payment);
     }

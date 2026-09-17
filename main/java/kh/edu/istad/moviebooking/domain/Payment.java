@@ -52,6 +52,12 @@ public class Payment {
     @Column(name = "provider_reference", unique = true)
     private String providerReference;
 
+    @Column(
+            name = "qr_payload",
+            columnDefinition = "TEXT"
+    )
+    private String qrPayload;
+
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 

@@ -22,13 +22,12 @@ spring:
       port: 6379
       database: 0
 
-#bakong:
-#  base-url: https://api-bakong.nbc.gov.kh
-#  token: ${BAKONG_TOKEN} #
-#  account-id: ${BAKONG_ACCOUNT_ID} #
-#  merchant-id: ${BAKONG_MERCHANT_ID}
-#  merchant-name: ${BAKONG_MERCHANT_NAME} #
-#  acquiring-bank: ${BAKONG_ACQUIRING_BANK}
+bakong:
+  base-url: https://api-bakong.nbc.gov.kh
+  token: ${BAKONG_TOKEN}
+  account-id: ${BAKONG_ACCOUNT_ID}
+  account-name: ${BAKONG_ACCOUNT_NAME}
+  currency: USD
 
 
 tmdb:

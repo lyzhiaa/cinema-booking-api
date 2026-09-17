@@ -64,6 +64,12 @@ public class Booking {
     )
     private LocalDateTime paymentExpiresAt;
 
+    @Column(
+            name = "ticket_qr_token",
+            unique = true
+    )
+    private UUID ticketQrToken;
+
 
     @Column(
             name = "created_at",

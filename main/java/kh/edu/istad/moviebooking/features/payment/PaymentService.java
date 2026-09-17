@@ -14,4 +14,6 @@ public interface PaymentService {
 
 //    add failure when payment unsuccessfully
     PaymentResponse markPaymentFailed(UUID paymentUuid);
+
+    PaymentResponse verifyBakongPayment(UUID paymentUuid);
 }

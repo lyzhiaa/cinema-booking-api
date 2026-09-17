@@ -2,9 +2,11 @@ package kh.edu.istad.moviebooking.features.seatHold;
 
 import kh.edu.istad.moviebooking.domain.Seat;
 import kh.edu.istad.moviebooking.domain.Showtime;
+import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.seat.SeatRealtimeService;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.dto.CreateSeatHoldRequest;
 import kh.edu.istad.moviebooking.features.seatHold.dto.SeatHoldResponse;
@@ -28,6 +30,8 @@ public class SeatHoldServiceImpl implements SeatHoldService {
     private final SeatRepository seatRepository;
 
     private final SeatReservationRepository seatReservationRepository;
+
+    private final SeatRealtimeService seatRealtimeService;
 
 
     @Override
@@ -157,21 +161,35 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
         redisTemplate.expire(holdSeatsKey, HOLD_DURATION);
 
+        seatRealtimeService.broadcastSeatUpdate(
+                showtimeUuid,
+                heldSeatUuids,
+                SeatAvailabilityStatus.HELD,
+                HOLD_DURATION.toSeconds()
+        );
+
         return new SeatHoldResponse(holdId, showtimeUuid, heldSeatUuids, HOLD_DURATION.toSeconds());
 
     }
 
     @Override
     public void releaseHold(UUID showtimeUuid, UUID holdId) {
-        //    create hold key
+
         String holdSeatsKey = buildHoldSeatsKey(showtimeUuid, holdId);
-        // get all seats belonging to that hold
+
         Set<String> seatUuidStrings = redisTemplate.opsForSet().members(holdSeatsKey);
-        // Handle an invalid or expired hold
-        if (seatUuidStrings == null || seatUuidStrings.isEmpty()) {
+
+        if (
+                seatUuidStrings == null || seatUuidStrings.isEmpty()
+        ) {
             throw new BadRequestException("Seat hold does not exist or has expired");
         }
-        // 4. Release each seat
+
+        List<UUID> releasedSeatUuids = new ArrayList<>();
+
+
+        // 1. Remove every seat that really belongs
+        //    to this hold
         for (String seatUuidString : seatUuidStrings) {
 
             UUID seatUuid = UUID.fromString(seatUuidString);
@@ -181,16 +199,68 @@ public class SeatHoldServiceImpl implements SeatHoldService {
             String currentHoldId = redisTemplate.opsForValue().get(seatHoldKey);
 
 
-            // Only remove a seat owned by this hold
+            // Important:
+            // delete only when this hold still owns the seat
             if (holdId.toString().equals(currentHoldId)) {
 
                 redisTemplate.delete(seatHoldKey);
+
+                releasedSeatUuids.add(seatUuid);
             }
         }
 
 
-        // 5. Remove hold → seats mapping
+        // 2. Delete reverse mapping
         redisTemplate.delete(holdSeatsKey);
+
+        // 3. Nothing was actually released
+        if (releasedSeatUuids.isEmpty()) {
+            return;
+        }
+
+
+        List<UUID> availableSeatUuids = new ArrayList<>();
+
+        List<UUID> bookedSeatUuids = new ArrayList<>();
+
+
+        for (UUID seatUuid : releasedSeatUuids) {
+
+            boolean isBooked = seatReservationRepository.existsByShowtimeUuidAndSeatUuid(showtimeUuid, seatUuid);
+
+            if (isBooked) {
+
+                bookedSeatUuids.add(seatUuid);
+
+            } else {
+
+                availableSeatUuids.add(seatUuid);
+            }
+        }
+
+
+        // 5. Broadcast AVAILABLE seats
+        if (!availableSeatUuids.isEmpty()) {
+
+            seatRealtimeService.broadcastSeatUpdate(
+                            showtimeUuid,
+                            availableSeatUuids,
+                            SeatAvailabilityStatus.AVAILABLE,
+                            null
+                    );
+        }
+
+
+        // 6. Broadcast BOOKED seats
+        if (!bookedSeatUuids.isEmpty()) {
+
+            seatRealtimeService.broadcastSeatUpdate(
+                            showtimeUuid,
+                            bookedSeatUuids,
+                            SeatAvailabilityStatus.BOOKED,
+                            null
+                    );
+        }
     }
 
      //    helper method

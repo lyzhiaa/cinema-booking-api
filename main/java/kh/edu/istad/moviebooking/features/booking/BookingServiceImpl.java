@@ -3,10 +3,12 @@ package kh.edu.istad.moviebooking.features.booking;
 import jakarta.transaction.Transactional;
 import kh.edu.istad.moviebooking.domain.*;
 import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
+import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
+import kh.edu.istad.moviebooking.features.seat.SeatRealtimeService;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.SeatHoldService;
 import kh.edu.istad.moviebooking.features.seatReservation.SeatReservationRepository;
@@ -40,6 +42,8 @@ public class BookingServiceImpl implements BookingService {
     private final StringRedisTemplate stringRedisTemplate;
     //    service
     private final SeatHoldService seatHoldService;
+
+    private final SeatRealtimeService seatRealtimeService;
 
     @Override
     @Transactional
@@ -153,10 +157,22 @@ public class BookingServiceImpl implements BookingService {
 
         try {
             seatReservationRepository.saveAllAndFlush(reservations);
+
         } catch (DataIntegrityViolationException exception) {
 
             throw new BadRequestException("One or more seats are already booked");
         }
+
+        List<UUID> bookedSeatUuids = seats.stream()
+                .map(Seat::getUuid)
+                .toList();
+
+        seatRealtimeService.broadcastSeatUpdate(
+                showtime.getUuid(),
+                bookedSeatUuids,
+                SeatAvailabilityStatus.BOOKED,
+                null
+        );
 
         // 8. Remove temporary Redis hold
         seatHoldService.releaseHold(createBookingRequest.showtimeUuid(), createBookingRequest.holdId());
