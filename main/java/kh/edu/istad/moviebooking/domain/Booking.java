@@ -20,28 +20,16 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(
-            nullable = false,
-            unique = true,
-            updatable = false
-    )
+    @Column(nullable = false, unique = true, updatable = false)
     private UUID uuid;
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "showtime_id",
-            nullable = false
-    )
+    @JoinColumn(name = "showtime_id", nullable = false)
     private Showtime showtime;
 
 
-    @Column(
-            name = "hold_id",
-            nullable = false,
-            unique = true,
-            updatable = false
-    )
+    @Column(name = "hold_id", nullable = false, unique = true, updatable = false)
     private UUID holdId;
 
 
@@ -50,39 +38,26 @@ public class Booking {
     private BookingStatus status;
 
 
-    @Column(
-            name = "total_amount",
-            nullable = false,
-            precision = 10,
-            scale = 2
-    )
+    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(
-            name = "payment_expires_at",
-            nullable = false
-    )
+    @Column(name = "payment_expires_at", nullable = false)
     private LocalDateTime paymentExpiresAt;
 
-    @Column(
-            name = "ticket_qr_token",
-            unique = true
-    )
+    @Column(name = "ticket_qr_token", unique = true)
     private UUID ticketQrToken;
 
-
-    @Column(
-            name = "created_at",
-            nullable = false,
-            updatable = false
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "user_id"
     )
+    private User user;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
 
-    @Column(
-            name = "updated_at",
-            nullable = false
-    )
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
 
