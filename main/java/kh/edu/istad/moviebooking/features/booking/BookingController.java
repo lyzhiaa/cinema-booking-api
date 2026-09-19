@@ -6,6 +6,7 @@ import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,5 +28,11 @@ public class BookingController {
     public BookingResponse getBookingByUuid(@PathVariable UUID uuid) {
 
         return bookingService.getBookingByUuid(uuid);
+    }
+
+    @GetMapping("/users/{userUuid}")
+    public List<BookingResponse> getBookingsByUserUuid(@PathVariable UUID userUuid) {
+
+        return bookingService.getBookingByUserUuid(userUuid);
     }
 }

@@ -14,25 +14,11 @@ import java.util.List;
 )
 public interface BookingMapper {
 
-    @Mapping(
-            source = "booking.showtime.uuid",
-            target = "showtimeUuid"
-    )
-    @Mapping(
-            source = "booking.showtime.movie.title",
-            target = "movieTitle"
-    )
-    @Mapping(
-            source = "booking.showtime.hall.name",
-            target = "hallName"
-    )
-    @Mapping(
-            source = "booking.showtime.startTime",
-            target = "startTime"
-    )
-    @Mapping(
-            source = "bookingSeats",
-            target = "seats"
-    )
+    @Mapping(source = "booking.showtime.uuid", target = "showtimeUuid")
+    @Mapping(source = "booking.showtime.movie.title", target = "movieTitle")
+    @Mapping(source = "booking.showtime.hall.name", target = "hallName")
+    @Mapping(source = "booking.showtime.startTime", target = "startTime")
+    @Mapping(source = "bookingSeats", target = "seats")
+    @Mapping(source = "booking.user.uuid", target = "userUuid")
     BookingResponse toBookingResponse(Booking booking, List<BookingSeat> bookingSeats);
 }

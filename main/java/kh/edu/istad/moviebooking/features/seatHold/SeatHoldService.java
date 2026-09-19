@@ -11,4 +11,6 @@ public interface SeatHoldService {
 
 //    remove if user does not book
     void releaseHold(UUID showtimeUuid, UUID holdId);
+
+    void validateHoldOwner(UUID showtimeUuid, UUID holdId, UUID userUuid);
 }

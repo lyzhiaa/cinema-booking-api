@@ -3,6 +3,7 @@ package kh.edu.istad.moviebooking.features.booking;
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface BookingService {
@@ -11,4 +12,9 @@ public interface BookingService {
 
 //    get booking by uuid
     BookingResponse getBookingByUuid(UUID bookingUuid);
+
+//    get booking by userUuid
+    List<BookingResponse> getBookingByUserUuid(UUID userUuid);
+
+    void expirePendingBookings();
 }

@@ -11,6 +11,9 @@ public record BookingResponse(
         UUID uuid,
 
         UUID showtimeUuid,
+
+        UUID userUuid,
+
         UUID ticketQrToken,
 
         String movieTitle,

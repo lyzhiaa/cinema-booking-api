@@ -1,6 +1,5 @@
 package kh.edu.istad.moviebooking.features.booking;
 
-import jakarta.transaction.Transactional;
 import kh.edu.istad.moviebooking.domain.*;
 import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
@@ -13,11 +12,13 @@ import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.SeatHoldService;
 import kh.edu.istad.moviebooking.features.seatReservation.SeatReservationRepository;
 import kh.edu.istad.moviebooking.features.showtime.ShowTimeRepository;
+import kh.edu.istad.moviebooking.features.user.UserRepository;
 import kh.edu.istad.moviebooking.mapper.BookingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ public class BookingServiceImpl implements BookingService {
     private final ShowTimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
     private final SeatReservationRepository seatReservationRepository;
+    private final UserRepository userRepository;
 
     //    mapper
     private final BookingMapper bookingMapper;
@@ -49,14 +51,29 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest createBookingRequest) {
 
+        // find user
+        User user = userRepository.findUserByUuid(createBookingRequest.userUuid())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", createBookingRequest.userUuid()));
+
         // 1. Find Showtime
         Showtime showtime = showtimeRepository.findShowtimeByUuid(createBookingRequest.showtimeUuid())
-                        .orElseThrow(() -> new ResourceNotFoundException(
-                                        "Showtime",
-                                        "uuid",
-                                        createBookingRequest.showtimeUuid()
-                                )
-                        );
+                .orElseThrow(() -> new ResourceNotFoundException(
+                                "Showtime",
+                                "uuid",
+                                createBookingRequest.showtimeUuid()
+                        )
+                );
+
+        // reject disable account
+        if (Boolean.TRUE.equals(user.getDisabled())) {
+            throw new BadRequestException("User account is disabled");
+        }
+
+        seatHoldService.validateHoldOwner(
+                createBookingRequest.showtimeUuid(),
+                createBookingRequest.holdId(),
+                createBookingRequest.userUuid()
+        );
 
         // 2. Prevent reusing same hold
         if (bookingRepository.existsBookingByHoldId(createBookingRequest.holdId())) {
@@ -115,13 +132,13 @@ public class BookingServiceImpl implements BookingService {
 
         // 6. Create ONE Booking
         Booking booking = Booking.builder()
+                        .user(user)
                         .showtime(showtime)
                         .holdId(createBookingRequest.holdId())
                         .status(BookingStatus.PENDING_PAYMENT)
                         .totalAmount(totalAmount)
                         .paymentExpiresAt(LocalDateTime.now().plusMinutes(10))
                         .build();
-
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -187,11 +204,7 @@ public class BookingServiceImpl implements BookingService {
         public BookingResponse getBookingByUuid (UUID bookingUuid){
 //        finding the booking
             Booking booking = bookingRepository.findBookingByUuid(bookingUuid).orElseThrow
-                    (() -> new ResourceNotFoundException(
-                            "Booking",
-                            "uuid",
-                            bookingUuid
-                    )
+                    (() -> new ResourceNotFoundException("Booking", "uuid", bookingUuid)
             );
 
             //  Check whether unpaid booking has expired
@@ -203,7 +216,28 @@ public class BookingServiceImpl implements BookingService {
             return bookingMapper.toBookingResponse(booking, bookingSeats);
         }
 
-//        expiration method
+
+    //        get booking by user uuid
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getBookingByUserUuid(UUID userUuid) {
+
+        User user = userRepository.findUserByUuid(userUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", userUuid));
+
+        List<Booking> bookings = bookingRepository
+                        .findAllByUserUuidOrderByCreatedAtDesc(user.getUuid());
+
+        return bookings.stream().map(booking -> {
+
+                    List<BookingSeat> bookingSeats = bookingSeatRepository
+                                    .findAllBookingSeatByBookingUuid(booking.getUuid());
+
+                    return bookingMapper.toBookingResponse(booking, bookingSeats);
+                }).toList();
+    }
+
+    //        expiration method
     @Transactional
     public void expirePendingBookings() {
         List<Booking> expiredBookings = bookingRepository.findAllByStatusAndPaymentExpiresAtBefore(
@@ -219,17 +253,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private String buildHoldSeatsKey(UUID showtimeUuid, UUID holdId) {
-        return "hold:seats:"
-                + showtimeUuid
-                + ":"
-                + holdId;
+        return "hold:seats:" + showtimeUuid + ":" + holdId;
     }
 //    for verify hold ownership
     private String buildSeatHoldKey(UUID showtimeUuid, UUID seatUuid) {
-        return "seat:hold:"
-                + showtimeUuid
-                + ":"
-                + seatUuid;
+        return "seat:hold:" + showtimeUuid + ":" + seatUuid;
     }
 
 //    check when booking is success

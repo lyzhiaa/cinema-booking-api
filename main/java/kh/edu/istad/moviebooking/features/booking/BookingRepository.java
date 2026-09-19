@@ -18,4 +18,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findAllByStatusAndPaymentExpiresAtBefore(BookingStatus status, LocalDateTime time);
 
     Optional<Booking> findByTicketQrToken(UUID uuid);
+
+    List<Booking> findAllByUserUuidOrderByCreatedAtDesc(UUID userUuid);
 }

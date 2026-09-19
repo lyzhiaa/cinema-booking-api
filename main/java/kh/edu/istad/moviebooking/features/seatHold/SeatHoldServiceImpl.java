@@ -2,6 +2,7 @@ package kh.edu.istad.moviebooking.features.seatHold;
 
 import kh.edu.istad.moviebooking.domain.Seat;
 import kh.edu.istad.moviebooking.domain.Showtime;
+import kh.edu.istad.moviebooking.domain.User;
 import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
@@ -12,6 +13,7 @@ import kh.edu.istad.moviebooking.features.seatHold.dto.CreateSeatHoldRequest;
 import kh.edu.istad.moviebooking.features.seatHold.dto.SeatHoldResponse;
 import kh.edu.istad.moviebooking.features.seatReservation.SeatReservationRepository;
 import kh.edu.istad.moviebooking.features.showtime.ShowTimeRepository;
+import kh.edu.istad.moviebooking.features.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,9 +35,18 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
     private final SeatRealtimeService seatRealtimeService;
 
+    private final UserRepository userRepository;
+
 
     @Override
     public SeatHoldResponse holdSeats(UUID showtimeUuid, CreateSeatHoldRequest createSeatHoldRequest) {
+
+        User user = userRepository.findUserByUuid(createSeatHoldRequest.userUuid())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", createSeatHoldRequest.userUuid()));
+
+        if (Boolean.TRUE.equals(user.getDisabled())) {
+            throw new BadRequestException("User account is disabled");
+        }
 
         // Find Showtime
         Showtime showtime = showtimeRepository.findShowtimeByUuid(showtimeUuid)
@@ -151,6 +162,10 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         // 6. Response
         // =====================================================
 
+        String holdUserKey = buildHoldUserKey(showtimeUuid, holdId);
+
+        redisTemplate.opsForValue().set(holdUserKey, user.getUuid().toString(), HOLD_DURATION);
+
         String holdSeatsKey = buildHoldSeatsKey(showtimeUuid, holdId);
 
         String[] seatUuidStrings = heldSeatUuids.stream()
@@ -198,7 +213,6 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
             String currentHoldId = redisTemplate.opsForValue().get(seatHoldKey);
 
-
             // Important:
             // delete only when this hold still owns the seat
             if (holdId.toString().equals(currentHoldId)) {
@@ -209,9 +223,12 @@ public class SeatHoldServiceImpl implements SeatHoldService {
             }
         }
 
-
         // 2. Delete reverse mapping
         redisTemplate.delete(holdSeatsKey);
+
+        String holdUserKey = buildHoldUserKey(showtimeUuid, holdId);
+
+        redisTemplate.delete(holdUserKey);
 
         // 3. Nothing was actually released
         if (releasedSeatUuids.isEmpty()) {
@@ -263,23 +280,36 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         }
     }
 
-     //    helper method
+    @Override
+    public void validateHoldOwner(UUID showtimeUuid, UUID holdId, UUID userUuid) {
+
+        String holdUserKey = buildHoldUserKey(showtimeUuid, holdId);
+
+        String holdUserUuid = redisTemplate.opsForValue().get(holdUserKey);
+
+        if (holdUserUuid == null) {
+            throw new BadRequestException("Seat hold does not exist or has expired");
+        }
+
+        if (!userUuid.toString().equals(holdUserUuid)) {
+            throw new BadRequestException("Seat hold does not belong to this user");
+        }
+    }
+
+    //    helper method
+
+    private String buildHoldUserKey(UUID showtimeUuid, UUID holdId) {
+
+        return "hold:user:" + showtimeUuid + ":" + holdId;
+    }
+
     private String buildSeatHoldKey(UUID showtimeUuid, UUID seatUuid) {
-        return "seat:hold:"
-                + showtimeUuid
-                + ":"
-                + seatUuid;
+        return "seat:hold:" + showtimeUuid + ":" + seatUuid;
     }
 
 
-    private String buildHoldSeatsKey(
-            UUID showtimeUuid,
-            UUID holdId
-    ) {
-        return "hold:seats:"
-                + showtimeUuid
-                + ":"
-                + holdId;
+    private String buildHoldSeatsKey(UUID showtimeUuid, UUID holdId) {
+        return "hold:seats:" + showtimeUuid + ":" + holdId;
     }
 
 }
