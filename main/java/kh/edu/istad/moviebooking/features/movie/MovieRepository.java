@@ -11,4 +11,6 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     Boolean existsByTmdbId(Long tmdbId);
 //    find movie by uuid
     Optional<Movie> findByUuid(UUID uuid);
+
+    Optional<Object> findMovieByUuid(UUID uuid);
 }

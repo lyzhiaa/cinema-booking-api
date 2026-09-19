@@ -48,9 +48,7 @@ public class Booking {
     private UUID ticketQrToken;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "user_id"
-    )
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "created_at", nullable = false, updatable = false)
