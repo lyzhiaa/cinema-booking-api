@@ -1,8 +1,10 @@
 package kh.edu.istad.moviebooking.features.user;
 
+import kh.edu.istad.moviebooking.domain.Role;
 import kh.edu.istad.moviebooking.domain.User;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.role.RoleRepository;
 import kh.edu.istad.moviebooking.features.user.dto.CreateUserRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UserResponse;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final UserMapper userMapper;
 
     @Override
@@ -33,12 +36,15 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Email already exists");
         }
 
-        if (userRepository.existsByPhone(createUserRequest.phone())) {
+        if (userRepository.existsByPhone(createUserRequest.phone()))
             throw new BadRequestException("Phone already exists");
-        }
+
+        Role customerRole = roleRepository.findRoleByName("CUSTOMER")
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", "CUSTOMER"));
 
         User user = userMapper.fromUserCreateRequest(createUserRequest);
 
+        user.setRole(customerRole);
         user.setPoints(0);
         user.setDisabled(false);
         user.setIsDeleted(false);
@@ -52,20 +58,11 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponse getUserByUuid(UUID uuid) {
 
-        User user = userRepository
-                .findUserByUuid(uuid)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                                "User",
-                                "uuid",
-                                uuid
-                        )
-                );
+        User user = userRepository.findUserByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", uuid));
 
         if (Boolean.TRUE.equals(user.getIsDeleted())) {
-            throw new ResourceNotFoundException(
-                    "User",
-                    "uuid",
-                    uuid
+            throw new ResourceNotFoundException("User", "uuid", uuid
             );
         }
 

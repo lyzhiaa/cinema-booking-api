@@ -11,21 +11,11 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(
-        name = "users",
+@Table(name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_users_email",
-                        columnNames = "email"
-                ),
-                @UniqueConstraint(
-                        name = "uk_users_username",
-                        columnNames = "username"
-                ),
-                @UniqueConstraint(
-                        name = "uk_users_phone",
-                        columnNames = "phone"
-                )
+                @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
+                @UniqueConstraint(name = "uk_users_username", columnNames = "username"),
+                @UniqueConstraint(name = "uk_users_phone", columnNames = "phone")
         }
 )
 @NoArgsConstructor
@@ -48,6 +38,10 @@ public class User {
 
     @Column(nullable = false, unique = true, length = 100)
     private String username;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
 
     @Column(nullable = false, unique = true, length = 150)
     private String email;

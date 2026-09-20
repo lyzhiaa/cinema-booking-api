@@ -1,5 +1,6 @@
 package kh.edu.istad.moviebooking.features.user;
 
+import kh.edu.istad.moviebooking.domain.Role;
 import kh.edu.istad.moviebooking.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -18,4 +19,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByPhone(String phone);
 
     List<User> findAllByIsDeletedFalse();
+
+    Optional<User> findUserByUsername(String username);
+
+    Optional<User> findUserByEmail(String email);
+
+    Optional<User> findUserByUsernameOrEmail(String username, String email);
+
+    Optional<Role> findUserByRoleName(String name);
+
+    Optional<User> findByUsernameOrEmail(String username, String email);
 }
