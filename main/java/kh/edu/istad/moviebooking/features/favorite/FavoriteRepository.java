@@ -16,4 +16,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     Optional<Favorite> findByUserUuidAndMovieUuid(UUID userUuid, UUID movieUuid);
 
     Page<Favorite> findAllByUserUuid(UUID userUuid, Pageable pageable);
+
+    long countByUserUuid(UUID userUuid);
 }

@@ -1,6 +1,7 @@
 package kh.edu.istad.moviebooking.features.favorite;
 
 import kh.edu.istad.moviebooking.features.common.PageResponse;
+import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteCountResponse;
 import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteResponse;
 import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteStatusResponse;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +40,11 @@ public class FavoriteController {
     public FavoriteStatusResponse getFavoriteStatus(@PathVariable UUID movieUuid) {
 
         return favoriteService.getFavoriteStatus(movieUuid);
+    }
+
+    @GetMapping("/count")
+    public FavoriteCountResponse getMyFavoriteCount() {
+
+        return new FavoriteCountResponse(favoriteService.getMyFavoriteCount());
     }
 }

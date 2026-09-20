@@ -70,13 +70,10 @@ public class FavoriteServiceImpl implements FavoriteService {
 
         Page<Favorite> favoritePage = favoriteRepository.findAllByUserUuid(user.getUuid(), pageable);
 
-        List<FavoriteResponse> favorites =
-                favoritePage
+        List<FavoriteResponse> favorites = favoritePage
                         .getContent()
                         .stream()
-                        .map(
-                                favoriteMapper::toFavoriteResponse
-                        )
+                        .map(favoriteMapper::toFavoriteResponse)
                         .toList();
 
         return new PageResponse<>(
@@ -100,5 +97,14 @@ public class FavoriteServiceImpl implements FavoriteService {
 
         return new FavoriteStatusResponse(movieUuid, favorite
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getMyFavoriteCount() {
+
+        User user = currentUserService.getCurrentUser();
+
+        return favoriteRepository.countByUserUuid(user.getUuid());
     }
 }

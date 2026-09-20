@@ -29,6 +29,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -131,6 +132,8 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPaidAt(LocalDateTime.now());
 
         booking.setStatus(BookingStatus.CONFIRMED);
+
+        awardPoints(payment, booking);
 
 // Only now generate tickets
         ticketService.generateTicketsForBooking(booking.getUuid());
@@ -267,5 +270,26 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentPage.isFirst(),
                 paymentPage.isLast()
         );
+    }
+
+    private void awardPoints(Payment payment, Booking booking) {
+
+        if (Boolean.TRUE.equals(booking.getPointsAwarded())) {
+            return;
+        }
+
+        int earnedPoints = payment.getAmount()
+                        .setScale(0, RoundingMode.FLOOR)
+                        .intValueExact();
+
+        User user = booking.getUser();
+
+        int currentPoints = user.getPoints() == null
+                        ? 0
+                        : user.getPoints();
+
+        user.setPoints(currentPoints + earnedPoints);
+
+        booking.setPointsAwarded(true);
     }
 }

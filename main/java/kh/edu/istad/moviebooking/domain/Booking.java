@@ -51,6 +51,9 @@ public class Booking {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(nullable = false)
+    private Boolean pointsAwarded;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -68,6 +71,10 @@ public class Booking {
 
         if (status == null) {
             status = BookingStatus.PENDING_PAYMENT;
+        }
+
+        if (pointsAwarded == null) {
+            pointsAwarded = false;
         }
 
         createdAt = LocalDateTime.now();

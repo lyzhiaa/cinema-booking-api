@@ -12,4 +12,6 @@ public interface FavoriteService {
     PageResponse<FavoriteResponse> getFavorites(int page, int size);
 
     FavoriteStatusResponse getFavoriteStatus(UUID movieUuid);
+
+    long getMyFavoriteCount();
 }
