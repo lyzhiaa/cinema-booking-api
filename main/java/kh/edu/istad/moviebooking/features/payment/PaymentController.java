@@ -3,6 +3,8 @@ package kh.edu.istad.moviebooking.features.payment;
 
 import kh.edu.istad.moviebooking.domain.Payment;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
+import kh.edu.istad.moviebooking.features.payment.dto.PaymentHistoryResponse;
 import kh.edu.istad.moviebooking.features.payment.dto.PaymentResponse;
 import kh.edu.istad.moviebooking.features.qrcode.QrCodeService;
 import lombok.RequiredArgsConstructor;
@@ -51,8 +53,7 @@ public class PaymentController {
                                 )
                         );
 
-        byte[] qr = qrCodeService.generateQrCode(
-                        payment.getQrPayload(),
+        byte[] qr = qrCodeService.generateQrCode(payment.getQrPayload(),
                         400,
                         400
                 );
@@ -65,5 +66,19 @@ public class PaymentController {
     public PaymentResponse verifyPayment(@PathVariable UUID paymentUuid) {
 
         return paymentService.verifyBakongPayment(paymentUuid);
+    }
+
+//    get my payment
+    @GetMapping("/payments/me")
+    public PageResponse<PaymentHistoryResponse> getMyPayments(
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size
+
+    ) {
+        return paymentService.getMyPayments(page, size);
     }
 }

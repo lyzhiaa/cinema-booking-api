@@ -2,8 +2,8 @@ package kh.edu.istad.moviebooking.features.booking;
 
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface BookingService {
@@ -14,7 +14,7 @@ public interface BookingService {
     BookingResponse getBookingByUuid(UUID bookingUuid);
 
 //    get booking by userUuid
-    List<BookingResponse> getMyBooking();
+    PageResponse<BookingResponse> getMyBookings(int page, int size);
 
     void expirePendingBookings();
 }

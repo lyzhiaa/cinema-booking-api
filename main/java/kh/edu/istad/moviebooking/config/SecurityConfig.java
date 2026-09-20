@@ -19,11 +19,15 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -97,7 +101,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, @Qualifier("accessJwtDecoder") JwtDecoder accessJwtDecoder) throws Exception {
 
-        http.csrf(csrf -> csrf.disable())
+        http
+                .cors(cors -> {})
+
+                .csrf(csrf -> csrf.disable())
 
                 .formLogin(form -> form.disable())
 
@@ -108,36 +115,146 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers(HttpMethod.POST,
-                                        "/api/v1/auth/register",
-                                        "/api/v1/auth/login",
-                                        "/api/v1/auth/refresh"
-                                )
-                                .permitAll()
-                                .requestMatchers("/ws/**")
-                                .permitAll()
-                                .requestMatchers(
-                                        "/api/v1/users/me/**"
-                                )
-                                .authenticated()
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/api/v1/users"
-                                )
-                                .hasRole("ADMIN")
-                                .requestMatchers(
-                                        HttpMethod.PATCH,
-                                        "/api/v1/users/*/disable",
-                                        "/api/v1/users/*/enable"
-                                )
-                                .hasRole("ADMIN")
-                                .requestMatchers(
-                                        HttpMethod.PATCH,
-                                        "/api/v1/users/*/role"
+
+                        // =========================
+                        // PUBLIC AUTH
+                        // =========================
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/logout"
+                        )
+                        .permitAll()
+
+
+                        // =========================
+                        // WEBSOCKET
+                        // =========================
+
+                        .requestMatchers(
+                                "/ws/**"
+                        )
+                        .permitAll()
+
+
+                        // =========================
+                        // GUEST
+                        // =========================
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/movies/**",
+                                "/api/v1/showtimes/**",
+                                "/api/v1/halls/**",
+                                "/api/v1/seats/**"
+                        )
+                        .permitAll()
+
+
+                        // =========================
+                        // CURRENT USER
+                        // =========================
+
+                        .requestMatchers(
+                                "/api/v1/users/me/**"
+                        )
+                        .authenticated()
+
+
+                        // =========================
+                        // ADMIN - USER MANAGEMENT
+                        // =========================
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/users"
                         )
                         .hasRole("ADMIN")
-                                .anyRequest()
-                                .authenticated()
+
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/v1/users/*/disable",
+                                "/api/v1/users/*/enable",
+                                "/api/v1/users/*/role"
+                        )
+                        .hasRole("ADMIN")
+
+
+                        // =========================
+                        // STAFF + ADMIN
+                        // CREATE CINEMA DATA
+                        // =========================
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/movies",
+                                "/api/v1/halls",
+                                "/api/v1/seats",
+                                "/api/v1/showtimes"
+                        )
+                        .hasAnyRole(
+                                "STAFF",
+                                "ADMIN"
+                        )
+
+
+                        // =========================
+                        // STAFF + ADMIN
+                        // UPDATE CINEMA DATA
+                        // =========================
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/v1/movies/**",
+                                "/api/v1/halls/**",
+                                "/api/v1/seats/**",
+                                "/api/v1/showtimes/**"
+                        )
+                        .hasAnyRole(
+                                "STAFF",
+                                "ADMIN"
+                        )
+
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/v1/movies/**",
+                                "/api/v1/halls/**",
+                                "/api/v1/seats/**",
+                                "/api/v1/showtimes/**"
+                        )
+                        .hasAnyRole(
+                                "STAFF",
+                                "ADMIN"
+                        )
+
+
+                        // =========================
+                        // STAFF + ADMIN
+                        // DELETE CINEMA DATA
+                        // =========================
+
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/v1/movies/**",
+                                "/api/v1/halls/**",
+                                "/api/v1/seats/**",
+                                "/api/v1/showtimes/**"
+                        )
+                        .hasAnyRole(
+                                "STAFF",
+                                "ADMIN"
+                        )
+
+
+                        // =========================
+                        // EVERYTHING ELSE
+                        // =========================
+
+                        .anyRequest()
+                        .authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt -> jwt
@@ -148,6 +265,28 @@ public class SecurityConfig {
                 .addFilterAfter(activeUserFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
+
+        configuration.setAllowedHeaders(List.of("*"));
+
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 
     @Bean

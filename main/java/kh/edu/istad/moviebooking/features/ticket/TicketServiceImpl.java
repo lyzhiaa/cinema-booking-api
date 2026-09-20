@@ -5,11 +5,18 @@ import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import kh.edu.istad.moviebooking.domain.enums.TicketStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
 import kh.edu.istad.moviebooking.features.booking.BookingRepository;
 import kh.edu.istad.moviebooking.features.booking.BookingSeatRepository;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import kh.edu.istad.moviebooking.features.ticket.dto.DigitalTicketResponse;
 import kh.edu.istad.moviebooking.features.ticket.dto.TicketItemResponse;
+import kh.edu.istad.moviebooking.mapper.TicketMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +29,9 @@ public class TicketServiceImpl implements TicketService{
     private final TicketRepository ticketRepository;
     private final BookingRepository bookingRepository;
     private final BookingSeatRepository bookingSeatRepository;
+    private final CurrentUserService currentUserService;
+
+    private final TicketMapper ticketMapper;
 
     @Override
     @Transactional
@@ -37,9 +47,7 @@ public class TicketServiceImpl implements TicketService{
         // Generate ONE QR token for entire booking
         if (booking.getTicketQrToken() == null) {
 
-            booking.setTicketQrToken(
-                    UUID.randomUUID()
-            );
+            booking.setTicketQrToken(UUID.randomUUID());
         }
 
         List<BookingSeat> bookingSeats = bookingSeatRepository.findAllBookingSeatByBookingUuid(bookingUuid);
@@ -81,9 +89,7 @@ public class TicketServiceImpl implements TicketService{
 
         List<Ticket> tickets = ticketRepository.findAllByBookingUuid(booking.getUuid());
 
-        List<TicketItemResponse> ticketItems =
-                tickets.stream()
-                        .map(ticket -> {
+        List<TicketItemResponse> ticketItems = tickets.stream().map(ticket -> {
 
                             Booking ticketBooking = ticket.getBooking();
 
@@ -136,6 +142,30 @@ public class TicketServiceImpl implements TicketService{
                 booking.getStatus(),
 
                 ticketItems
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<TicketItemResponse> getMyTickets(int page, int size) {
+
+        User user = currentUserService.getCurrentUser();
+
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "issuedAt"));
+
+        Page<Ticket> ticketPage = ticketRepository.findAllByBookingUserUuid(user.getUuid(), pageable);
+
+        List<TicketItemResponse> tickets = ticketMapper.toTicketItemResponseList(ticketPage.getContent());
+
+        return new PageResponse<>(
+                tickets,
+                ticketPage.getNumber(),
+                ticketPage.getSize(),
+                ticketPage.getTotalElements(),
+                ticketPage.getTotalPages(),
+                ticketPage.isFirst(),
+                ticketPage.isLast()
         );
     }
 }

@@ -3,10 +3,10 @@ package kh.edu.istad.moviebooking.features.booking;
 import jakarta.validation.Valid;
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,9 +30,17 @@ public class BookingController {
         return bookingService.getBookingByUuid(uuid);
     }
 
-    @GetMapping("/users/me")
-    public List<BookingResponse> getMyBooking() {
+    @GetMapping("/me")
+    public PageResponse<BookingResponse> getMyBooking(
 
-        return bookingService.getMyBooking();
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size
+
+    ) {
+
+        return bookingService.getMyBookings(page, size);
     }
 }

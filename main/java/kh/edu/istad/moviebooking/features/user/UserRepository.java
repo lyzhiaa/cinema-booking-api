@@ -1,8 +1,10 @@
 package kh.edu.istad.moviebooking.features.user;
 
+import io.lettuce.core.dynamic.annotation.Param;
 import kh.edu.istad.moviebooking.domain.Role;
 import kh.edu.istad.moviebooking.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,4 +31,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<Role> findUserByRoleName(String name);
 
     Optional<User> findByUsernameOrEmail(String username, String email);
+
+    @Query("""
+        SELECT u
+        FROM User u
+        JOIN FETCH u.role
+        WHERE u.uuid = :uuid
+        """)
+    Optional<User> findByUuidWithRole(@Param("uuid") UUID uuid);
 }

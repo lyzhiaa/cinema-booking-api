@@ -42,7 +42,9 @@ public class ActiveUserFilter extends OncePerRequestFilter {
 
             UUID userUuid = UUID.fromString(jwt.getSubject());
 
-            User user = userRepository.findUserByUuid(userUuid).orElse(null);
+            User user = userRepository
+                    .findByUuidWithRole(userUuid)
+                    .orElse(null);
 
             if (user == null) {
 

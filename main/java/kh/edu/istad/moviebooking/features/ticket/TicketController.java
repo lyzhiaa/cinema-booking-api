@@ -5,15 +5,14 @@ import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.booking.BookingRepository;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import kh.edu.istad.moviebooking.features.qrcode.QrCodeService;
 import kh.edu.istad.moviebooking.features.ticket.dto.DigitalTicketResponse;
+import kh.edu.istad.moviebooking.features.ticket.dto.TicketItemResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -60,5 +59,19 @@ public class TicketController {
         byte[] qrCode = qrCodeService.generateQrCode(ticketUrl, 400, 400);
 
         return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(qrCode);
+    }
+
+    @GetMapping("/me")
+    public PageResponse<TicketItemResponse> getMyTickets(
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size
+
+    ) {
+
+        return ticketService.getMyTickets(page, size);
     }
 }

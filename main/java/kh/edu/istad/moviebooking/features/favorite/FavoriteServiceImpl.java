@@ -5,12 +5,19 @@ import kh.edu.istad.moviebooking.domain.Movie;
 import kh.edu.istad.moviebooking.domain.User;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteResponse;
 import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteStatusResponse;
 import kh.edu.istad.moviebooking.features.movie.MovieRepository;
-import kh.edu.istad.moviebooking.features.user.UserRepository;
 import kh.edu.istad.moviebooking.mapper.FavoriteMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
+import org.springframework.data.domain.Pageable;
+
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +30,6 @@ import java.util.UUID;
 public class FavoriteServiceImpl implements FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
-    private final UserRepository userRepository;
     private final MovieRepository movieRepository;
     private final FavoriteMapper favoriteMapper;
 
@@ -55,13 +61,33 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FavoriteResponse> getFavorites() {
+    public PageResponse<FavoriteResponse> getFavorites(int page, int size) {
 
         User user = currentUserService.getCurrentUser();
 
-        List<Favorite> favorites = favoriteRepository.findAllByUserUuidOrderByCreatedAtDesc(user.getUuid());
+        Pageable pageable = PageRequest.of(page, size,
+                        Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        return favoriteMapper.toFavoriteResponseList(favorites);
+        Page<Favorite> favoritePage = favoriteRepository.findAllByUserUuid(user.getUuid(), pageable);
+
+        List<FavoriteResponse> favorites =
+                favoritePage
+                        .getContent()
+                        .stream()
+                        .map(
+                                favoriteMapper::toFavoriteResponse
+                        )
+                        .toList();
+
+        return new PageResponse<>(
+                favorites,
+                favoritePage.getNumber(),
+                favoritePage.getSize(),
+                favoritePage.getTotalElements(),
+                favoritePage.getTotalPages(),
+                favoritePage.isFirst(),
+                favoritePage.isLast()
+        );
     }
 
     @Override

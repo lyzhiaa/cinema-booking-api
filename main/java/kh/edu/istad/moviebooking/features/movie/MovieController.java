@@ -1,6 +1,7 @@
 package kh.edu.istad.moviebooking.features.movie;
 
 import jakarta.validation.Valid;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import kh.edu.istad.moviebooking.features.movie.dto.MovieResponse;
 import kh.edu.istad.moviebooking.features.movie.dto.UpdateMovieStatusRequest;
 import kh.edu.istad.moviebooking.intergration.tmdb.TmdbClient;
@@ -8,7 +9,6 @@ import kh.edu.istad.moviebooking.intergration.tmdb.dto.TmdbSearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,8 +20,23 @@ public class MovieController {
 
     //    get all movies
     @GetMapping
-    public List<MovieResponse> getAllMovies() {
-        return movieService.getAllMovies();
+    public PageResponse<MovieResponse> getAllMovies(
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            @RequestParam(defaultValue = "createdAt")
+            String sortBy,
+
+            @RequestParam(defaultValue = "desc")
+            String direction
+
+    ) {
+
+        return movieService.getAllMovies(page, size, sortBy, direction);
     }
 //    get movie by uuid
     @GetMapping("/{uuid}")

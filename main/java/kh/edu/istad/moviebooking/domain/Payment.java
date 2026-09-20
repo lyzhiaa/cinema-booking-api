@@ -23,11 +23,7 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(
-            nullable = false,
-            unique = true,
-            updatable = false
-    )
+    @Column(nullable = false, unique = true, updatable = false)
     private UUID uuid;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,10 +48,7 @@ public class Payment {
     @Column(name = "provider_reference", unique = true)
     private String providerReference;
 
-    @Column(
-            name = "qr_payload",
-            columnDefinition = "TEXT"
-    )
+    @Column(name = "qr_payload", columnDefinition = "TEXT")
     private String qrPayload;
 
     @Column(name = "paid_at")

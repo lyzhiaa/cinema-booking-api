@@ -1,6 +1,8 @@
 package kh.edu.istad.moviebooking.features.favorite;
 
 import kh.edu.istad.moviebooking.domain.Favorite;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,5 +15,5 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     Optional<Favorite> findByUserUuidAndMovieUuid(UUID userUuid, UUID movieUuid);
 
-    List<Favorite> findAllByUserUuidOrderByCreatedAtDesc(UUID userUuid);
+    Page<Favorite> findAllByUserUuid(UUID userUuid, Pageable pageable);
 }

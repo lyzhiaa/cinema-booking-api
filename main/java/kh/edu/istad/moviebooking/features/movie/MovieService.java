@@ -1,5 +1,6 @@
 package kh.edu.istad.moviebooking.features.movie;
 
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import kh.edu.istad.moviebooking.features.movie.dto.MovieResponse;
 import kh.edu.istad.moviebooking.features.movie.dto.UpdateMovieStatusRequest;
 
@@ -8,7 +9,12 @@ import java.util.UUID;
 
 public interface MovieService {
 //    get all movie
-    List<MovieResponse> getAllMovies();
+PageResponse<MovieResponse> getAllMovies(
+        int page,
+        int size,
+        String sortBy,
+        String direction
+);
 //    get movie by uuid
     MovieResponse getMovieByUuid(UUID uuid);
 //    import movie from tmdb

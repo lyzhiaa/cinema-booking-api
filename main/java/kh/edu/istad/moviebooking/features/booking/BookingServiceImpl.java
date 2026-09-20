@@ -8,6 +8,7 @@ import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
 import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
+import kh.edu.istad.moviebooking.features.common.PageResponse;
 import kh.edu.istad.moviebooking.features.seat.SeatRealtimeService;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.SeatHoldService;
@@ -17,6 +18,10 @@ import kh.edu.istad.moviebooking.features.user.UserRepository;
 import kh.edu.istad.moviebooking.mapper.BookingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -222,19 +227,44 @@ public class BookingServiceImpl implements BookingService {
     //        get booking by user uuid
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getMyBooking() {
+    public PageResponse<BookingResponse> getMyBookings(int page, int size) {
 
         User user = currentUserService.getCurrentUser();
 
-        List<Booking> bookings = bookingRepository.findAllByUserUuidOrderByCreatedAtDesc(user.getUuid());
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
 
-        return bookings.stream().map(booking -> {
+        Page<Booking> bookingPage = bookingRepository.findAllByUserUuid(
+                        user.getUuid(),
+                        pageable
+                );
 
-                    List<BookingSeat> bookingSeats = bookingSeatRepository
-                                    .findAllBookingSeatByBookingUuid(booking.getUuid());
+        List<BookingResponse> bookings = bookingPage.getContent()
+                        .stream()
+                        .map(booking -> {
 
-                    return bookingMapper.toBookingResponse(booking, bookingSeats);
-                }).toList();
+                            List<BookingSeat> bookingSeats = bookingSeatRepository
+                                            .findAllBookingSeatByBookingUuid(
+                                                    booking.getUuid()
+                                            );
+
+                            return bookingMapper.toBookingResponse(
+                                            booking,
+                                            bookingSeats
+                                    );
+                        })
+                        .toList();
+
+        return new PageResponse<>(
+                bookings,
+                bookingPage.getNumber(),
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                bookingPage.getTotalPages(),
+                bookingPage.isFirst(),
+                bookingPage.isLast()
+        );
     }
 
     //        expiration method

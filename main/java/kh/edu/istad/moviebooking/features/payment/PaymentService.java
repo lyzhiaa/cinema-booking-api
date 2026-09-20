@@ -1,5 +1,7 @@
 package kh.edu.istad.moviebooking.features.payment;
 
+import kh.edu.istad.moviebooking.features.common.PageResponse;
+import kh.edu.istad.moviebooking.features.payment.dto.PaymentHistoryResponse;
 import kh.edu.istad.moviebooking.features.payment.dto.PaymentResponse;
 
 import java.util.UUID;
@@ -16,4 +18,6 @@ public interface PaymentService {
     PaymentResponse markPaymentFailed(UUID paymentUuid);
 
     PaymentResponse verifyBakongPayment(UUID paymentUuid);
+
+    PageResponse<PaymentHistoryResponse> getMyPayments(int page, int size);
 }
