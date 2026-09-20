@@ -30,9 +30,9 @@ public class BookingController {
         return bookingService.getBookingByUuid(uuid);
     }
 
-    @GetMapping("/users/{userUuid}")
-    public List<BookingResponse> getBookingsByUserUuid(@PathVariable UUID userUuid) {
+    @GetMapping("/users/me")
+    public List<BookingResponse> getMyBooking() {
 
-        return bookingService.getBookingByUserUuid(userUuid);
+        return bookingService.getMyBooking();
     }
 }

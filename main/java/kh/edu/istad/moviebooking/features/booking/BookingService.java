@@ -14,7 +14,7 @@ public interface BookingService {
     BookingResponse getBookingByUuid(UUID bookingUuid);
 
 //    get booking by userUuid
-    List<BookingResponse> getBookingByUserUuid(UUID userUuid);
+    List<BookingResponse> getMyBooking();
 
     void expirePendingBookings();
 }

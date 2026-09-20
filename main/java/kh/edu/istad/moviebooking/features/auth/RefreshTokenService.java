@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,76 +22,58 @@ public class RefreshTokenService {
     private Long refreshTokenExpiration;
 
     @Transactional
-    public RefreshToken create(
-            User user,
-            String jti
-    ) {
+    public RefreshToken create(User user, String jti) {
 
-        LocalDateTime now =
-                LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
 
-        RefreshToken refreshToken =
-                RefreshToken.builder()
+        RefreshToken refreshToken = RefreshToken.builder()
                         .jti(jti)
                         .user(user)
-                        .expiresAt(
-                                now.plusSeconds(
-                                        refreshTokenExpiration
-                                )
-                        )
+                        .expiresAt(now.plusSeconds(refreshTokenExpiration))
                         .revoked(false)
                         .createdAt(now)
                         .build();
 
-        return refreshTokenRepository
-                .save(refreshToken);
+        return refreshTokenRepository.save(refreshToken);
     }
 
-    public RefreshToken findValidToken(
-            String jti
-    ) {
+    public RefreshToken findValidToken(String jti) {
 
-        RefreshToken refreshToken =
-                refreshTokenRepository
+        RefreshToken refreshToken = refreshTokenRepository
                         .findByJti(jti)
-                        .orElseThrow(() ->
-                                new BadRequestException(
-                                        "Refresh token is invalid"
-                                )
-                        );
+                        .orElseThrow(() -> new BadRequestException("Refresh token is invalid"));
 
-        if (Boolean.TRUE.equals(
-                refreshToken.getRevoked()
-        )) {
+        if (Boolean.TRUE.equals(refreshToken.getRevoked())) {
 
-            throw new BadRequestException(
-                    "Refresh token has been revoked"
-            );
+            throw new BadRequestException("Refresh token has been revoked");
         }
 
         if (!refreshToken
                 .getExpiresAt()
-                .isAfter(
-                        LocalDateTime.now()
-                )) {
+                .isAfter(LocalDateTime.now())) {
 
-            throw new BadRequestException(
-                    "Refresh token has expired"
-            );
+            throw new BadRequestException("Refresh token has expired");
         }
 
         return refreshToken;
     }
 
     @Transactional
-    public void revoke(
-            RefreshToken refreshToken
-    ) {
+    public void revoke(RefreshToken refreshToken) {
 
         refreshToken.setRevoked(true);
 
-        refreshTokenRepository.save(
-                refreshToken
-        );
+        refreshTokenRepository.save(refreshToken);
+    }
+
+    @Transactional
+    public void revokeAllByUser(User user) {
+
+        List<RefreshToken> tokens = refreshTokenRepository
+                        .findAllByUser_UuidAndRevokedFalse(user.getUuid());
+
+        tokens.forEach(token -> token.setRevoked(true));
+
+        refreshTokenRepository.saveAll(tokens);
     }
 }

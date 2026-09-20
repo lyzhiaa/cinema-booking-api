@@ -21,8 +21,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl
-        implements AuthService {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
 
@@ -150,5 +149,32 @@ public class AuthServiceImpl
         String newRefreshToken = jwtService.generateRefreshToken(user, newJti);
 
         return new RefreshTokenResponse(newAccessToken, newRefreshToken, "Bearer");
+    }
+
+    @Override
+    @Transactional
+    public void logout(LogoutRequest request) {
+
+        Jwt jwt = jwtService.decodeRefreshToken(request.refreshToken());
+
+        String jti = jwt.getId();
+
+        if (jti == null) {
+            throw new BadRequestException("Refresh token does not contain jti");
+        }
+
+        RefreshToken refreshToken = refreshTokenService.findValidToken(jti);
+
+        User user = refreshToken.getUser();
+
+        String subject = jwt.getSubject();
+
+        if (!user.getUuid().toString().equals(subject)) {
+
+            throw new BadRequestException("Refresh token does not belong to this user"
+            );
+        }
+
+        refreshTokenService.revoke(refreshToken);
     }
 }

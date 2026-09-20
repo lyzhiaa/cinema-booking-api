@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface FavoriteService {
-    FavoriteStatusResponse toggleFavorite(UUID userUuid, UUID movieUuid);
+    FavoriteStatusResponse toggleFavorite(UUID movieUuid);
 
-    List<FavoriteResponse> getFavorites(UUID userUuid);
+    List<FavoriteResponse> getFavorites();
 
-    FavoriteStatusResponse getFavoriteStatus(UUID userUuid, UUID movieUuid);
+    FavoriteStatusResponse getFavoriteStatus(UUID movieUuid);
 }

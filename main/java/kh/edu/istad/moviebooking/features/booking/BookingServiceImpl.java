@@ -5,6 +5,7 @@ import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
 import kh.edu.istad.moviebooking.features.seat.SeatRealtimeService;
@@ -47,13 +48,14 @@ public class BookingServiceImpl implements BookingService {
 
     private final SeatRealtimeService seatRealtimeService;
 
+    private final CurrentUserService currentUserService;
+
     @Override
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest createBookingRequest) {
 
         // find user
-        User user = userRepository.findUserByUuid(createBookingRequest.userUuid())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", createBookingRequest.userUuid()));
+        User user = currentUserService.getCurrentUser();
 
         // 1. Find Showtime
         Showtime showtime = showtimeRepository.findShowtimeByUuid(createBookingRequest.showtimeUuid())
@@ -72,7 +74,7 @@ public class BookingServiceImpl implements BookingService {
         seatHoldService.validateHoldOwner(
                 createBookingRequest.showtimeUuid(),
                 createBookingRequest.holdId(),
-                createBookingRequest.userUuid()
+                user.getUuid()
         );
 
         // 2. Prevent reusing same hold
@@ -220,13 +222,11 @@ public class BookingServiceImpl implements BookingService {
     //        get booking by user uuid
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getBookingByUserUuid(UUID userUuid) {
+    public List<BookingResponse> getMyBooking() {
 
-        User user = userRepository.findUserByUuid(userUuid)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", userUuid));
+        User user = currentUserService.getCurrentUser();
 
-        List<Booking> bookings = bookingRepository
-                        .findAllByUserUuidOrderByCreatedAtDesc(user.getUuid());
+        List<Booking> bookings = bookingRepository.findAllByUserUuidOrderByCreatedAtDesc(user.getUuid());
 
         return bookings.stream().map(booking -> {
 

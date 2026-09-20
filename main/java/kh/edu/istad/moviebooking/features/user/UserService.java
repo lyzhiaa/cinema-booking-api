@@ -2,6 +2,7 @@ package kh.edu.istad.moviebooking.features.user;
 
 import kh.edu.istad.moviebooking.features.user.dto.CreateUserRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRequest;
+import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRoleRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UserResponse;
 
 import java.util.List;
@@ -21,4 +22,6 @@ public interface UserService {
     void enableUser(UUID uuid);
 
     void deleteUser(UUID uuid);
+
+    UserResponse updateUserRole(UUID userUuid, UpdateUserRoleRequest updateUserRoleRequest);
 }

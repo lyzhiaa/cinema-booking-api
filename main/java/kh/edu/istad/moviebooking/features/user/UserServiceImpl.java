@@ -4,9 +4,11 @@ import kh.edu.istad.moviebooking.domain.Role;
 import kh.edu.istad.moviebooking.domain.User;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.auth.RefreshTokenService;
 import kh.edu.istad.moviebooking.features.role.RoleRepository;
 import kh.edu.istad.moviebooking.features.user.dto.CreateUserRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRequest;
+import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRoleRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UserResponse;
 import kh.edu.istad.moviebooking.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
@@ -144,21 +147,15 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void disableUser(UUID uuid) {
 
-        User user = userRepository
-                .findUserByUuid(uuid)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User",
-                                "uuid",
-                                uuid
-                        )
-                );
+        User user = userRepository.findUserByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", uuid));
 
         if (Boolean.TRUE.equals(user.getDisabled())) {
             throw new BadRequestException("User account is already disabled");
         }
 
         user.setDisabled(true);
+        refreshTokenService.revokeAllByUser(user);
     }
 
 
@@ -166,15 +163,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void enableUser(UUID uuid) {
 
-        User user = userRepository
-                .findUserByUuid(uuid)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User",
-                                "uuid",
-                                uuid
-                        )
-                );
+        User user = userRepository.findUserByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", uuid));
 
         if (Boolean.FALSE.equals(user.getDisabled())) {
             throw new BadRequestException("User account is already enabled");
@@ -188,33 +178,44 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(UUID uuid) {
 
-        User user = userRepository
-                .findUserByUuid(uuid)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", uuid)
-                );
+        User user = userRepository.findUserByUuid(uuid).orElseThrow(() -> new ResourceNotFoundException("User", "uuid", uuid));
 
         user.setIsDeleted(true);
         user.setDisabled(true);
     }
 
+//    update role for user
+@Override
+@Transactional
+public UserResponse updateUserRole(UUID userUuid, UpdateUserRoleRequest updateUserRoleRequest) {
+
+//        find user
+    User user = userRepository.findUserByUuid(userUuid)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", userUuid));
+
+    String roleName = updateUserRoleRequest.role().trim().toUpperCase();
+
+    Role role = roleRepository.findRoleByName(roleName)
+            .orElseThrow(() -> new ResourceNotFoundException("Role", "name", roleName));
+
+    if (user.getRole().getName().equals(roleName)) {
+
+        throw new BadRequestException("User already has this role");
+    }
+
+    user.setRole(role);
+
+    return userMapper.toUserResponse(user);
+}
+
     private User findNotDeletedUser(UUID uuid) {
 
-        User user = userRepository
-                .findUserByUuid(uuid)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User",
-                                "uuid",
-                                uuid
-                        )
+        User user = userRepository.findUserByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", uuid)
                 );
 
         if (Boolean.TRUE.equals(user.getIsDeleted())) {
-            throw new ResourceNotFoundException(
-                    "User",
-                    "uuid",
-                    uuid
-            );
+            throw new ResourceNotFoundException("User", "uuid", uuid);
         }
 
         return user;

@@ -9,27 +9,27 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/users/{userUuid}/favorites")
+@RequestMapping("/api/v1/users/me/favorites")
 @RequiredArgsConstructor
 public class FavoriteController {
 
     private final FavoriteService favoriteService;
 
     @PatchMapping("/{movieUuid}")
-    public FavoriteStatusResponse toggleFavorite(@PathVariable UUID userUuid, @PathVariable UUID movieUuid) {
+    public FavoriteStatusResponse toggleFavorite(@PathVariable UUID movieUuid) {
 
-        return favoriteService.toggleFavorite(userUuid, movieUuid);
+        return favoriteService.toggleFavorite(movieUuid);
     }
 
     @GetMapping
-    public List<FavoriteResponse> getFavorites(@PathVariable UUID userUuid) {
+    public List<FavoriteResponse> getFavorites() {
 
-        return favoriteService.getFavorites(userUuid);
+        return favoriteService.getFavorites();
     }
 
     @GetMapping("/{movieUuid}/status")
-    public FavoriteStatusResponse getFavoriteStatus(@PathVariable UUID userUuid, @PathVariable UUID movieUuid) {
+    public FavoriteStatusResponse getFavoriteStatus(@PathVariable UUID movieUuid) {
 
-        return favoriteService.getFavoriteStatus(userUuid, movieUuid);
+        return favoriteService.getFavoriteStatus(movieUuid);
     }
 }

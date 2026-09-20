@@ -12,4 +12,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByJti(String jti);
 
     List<RefreshToken> findAllByUserUuidAndRevokedFalse(UUID userUuid);
+
+    List<RefreshToken> findAllByUser_UuidAndRevokedFalse(UUID userUuid);
 }

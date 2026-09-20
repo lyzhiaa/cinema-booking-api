@@ -4,6 +4,7 @@ import kh.edu.istad.moviebooking.domain.Favorite;
 import kh.edu.istad.moviebooking.domain.Movie;
 import kh.edu.istad.moviebooking.domain.User;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
 import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteResponse;
 import kh.edu.istad.moviebooking.features.favorite.dto.FavoriteStatusResponse;
 import kh.edu.istad.moviebooking.features.movie.MovieRepository;
@@ -26,17 +27,18 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final MovieRepository movieRepository;
     private final FavoriteMapper favoriteMapper;
 
+    private final CurrentUserService currentUserService;
+
     @Override
     @Transactional
-    public FavoriteStatusResponse toggleFavorite(UUID userUuid, UUID movieUuid) {
+    public FavoriteStatusResponse toggleFavorite(UUID movieUuid) {
 
-        User user = userRepository.findUserByUuid(userUuid)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", userUuid));
+        User user = currentUserService.getCurrentUser();
 
         Movie movie = movieRepository.findByUuid(movieUuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Movie", "uuid", movieUuid));
 
-        Optional<Favorite> existingFavorite = favoriteRepository.findByUserUuidAndMovieUuid(userUuid, movieUuid);
+        Optional<Favorite> existingFavorite = favoriteRepository.findByUserUuidAndMovieUuid(user.getUuid(), movieUuid);
 
         if (existingFavorite.isPresent()) {
             favoriteRepository.delete(existingFavorite.get());
@@ -53,21 +55,22 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FavoriteResponse> getFavorites(UUID userUuid) {
+    public List<FavoriteResponse> getFavorites() {
 
-        userRepository.findUserByUuid(userUuid)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", userUuid));
+        User user = currentUserService.getCurrentUser();
 
-        List<Favorite> favorites = favoriteRepository.findAllByUserUuidOrderByCreatedAtDesc(userUuid);
+        List<Favorite> favorites = favoriteRepository.findAllByUserUuidOrderByCreatedAtDesc(user.getUuid());
 
         return favoriteMapper.toFavoriteResponseList(favorites);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public FavoriteStatusResponse getFavoriteStatus(UUID userUuid, UUID movieUuid) {
+    public FavoriteStatusResponse getFavoriteStatus(UUID movieUuid) {
 
-        boolean favorite = favoriteRepository.existsByUserUuidAndMovieUuid(userUuid, movieUuid);
+        User user = currentUserService.getCurrentUser();
+
+        boolean favorite = favoriteRepository.existsByUserUuidAndMovieUuid(user.getUuid(), movieUuid);
 
         return new FavoriteStatusResponse(movieUuid, favorite
         );

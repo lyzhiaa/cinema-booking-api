@@ -7,13 +7,13 @@ import kh.edu.istad.moviebooking.domain.enums.SeatAvailabilityStatus;
 import kh.edu.istad.moviebooking.domain.enums.SeatStatus;
 import kh.edu.istad.moviebooking.exception.BadRequestException;
 import kh.edu.istad.moviebooking.exception.ResourceNotFoundException;
+import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
 import kh.edu.istad.moviebooking.features.seat.SeatRealtimeService;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.dto.CreateSeatHoldRequest;
 import kh.edu.istad.moviebooking.features.seatHold.dto.SeatHoldResponse;
 import kh.edu.istad.moviebooking.features.seatReservation.SeatReservationRepository;
 import kh.edu.istad.moviebooking.features.showtime.ShowTimeRepository;
-import kh.edu.istad.moviebooking.features.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,14 +35,13 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
     private final SeatRealtimeService seatRealtimeService;
 
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
 
     @Override
     public SeatHoldResponse holdSeats(UUID showtimeUuid, CreateSeatHoldRequest createSeatHoldRequest) {
 
-        User user = userRepository.findUserByUuid(createSeatHoldRequest.userUuid())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", createSeatHoldRequest.userUuid()));
+        User user = currentUserService.getCurrentUser();
 
         if (Boolean.TRUE.equals(user.getDisabled())) {
             throw new BadRequestException("User account is disabled");
@@ -62,13 +61,8 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
         for (UUID seatUuid : createSeatHoldRequest.seatUuids()) {
 
-            Seat seat = seatRepository.findSeatByUuid(seatUuid).orElseThrow(
-                    () -> new ResourceNotFoundException(
-                                    "Seat",
-                                    "uuid",
-                                    seatUuid
-                            )
-                    );
+            Seat seat = seatRepository.findSeatByUuid(seatUuid)
+                    .orElseThrow(() -> new ResourceNotFoundException("Seat", "uuid", seatUuid));
 
             // Check whether this seat belongs to a couple group
             if (seat.getSeatGroup() != null) {
@@ -100,9 +94,7 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                     .getUuid()
                     .equals(showtime.getHall().getUuid())) {
 
-                throw new BadRequestException(
-                        "Seat " + seat.getSeatLabel() + " does not belong to the showtime hall"
-                );
+                throw new BadRequestException("Seat " + seat.getSeatLabel() + " does not belong to the showtime hall");
             }
 
 
@@ -194,14 +186,12 @@ public class SeatHoldServiceImpl implements SeatHoldService {
 
         Set<String> seatUuidStrings = redisTemplate.opsForSet().members(holdSeatsKey);
 
-        if (
-                seatUuidStrings == null || seatUuidStrings.isEmpty()
-        ) {
+        if (seatUuidStrings == null || seatUuidStrings.isEmpty()) {
+
             throw new BadRequestException("Seat hold does not exist or has expired");
         }
 
         List<UUID> releasedSeatUuids = new ArrayList<>();
-
 
         // 1. Remove every seat that really belongs
         //    to this hold

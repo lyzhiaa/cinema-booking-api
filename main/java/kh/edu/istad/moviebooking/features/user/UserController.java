@@ -3,6 +3,7 @@ package kh.edu.istad.moviebooking.features.user;
 import jakarta.validation.Valid;
 import kh.edu.istad.moviebooking.features.user.dto.CreateUserRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRequest;
+import kh.edu.istad.moviebooking.features.user.dto.UpdateUserRoleRequest;
 import kh.edu.istad.moviebooking.features.user.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+
     public UserResponse createUser(@Valid @RequestBody CreateUserRequest createUserRequest) {
 
         return userService.createUser(createUserRequest);
@@ -75,5 +77,11 @@ public class UserController {
     public void deleteUser(@PathVariable UUID uuid) {
 
         userService.deleteUser(uuid);
+    }
+
+    @PatchMapping("/{userUuid}/role")
+    public UserResponse updateUserRole(@PathVariable UUID userUuid, @Valid @RequestBody UpdateUserRoleRequest updateUserRoleRequest) {
+
+        return userService.updateUserRole(userUuid, updateUserRoleRequest);
     }
 }
