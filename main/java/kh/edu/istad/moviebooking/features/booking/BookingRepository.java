@@ -2,6 +2,8 @@ package kh.edu.istad.moviebooking.features.booking;
 
 import kh.edu.istad.moviebooking.domain.Booking;
 import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
+import kh.edu.istad.moviebooking.domain.enums.ConcessionOrderStatus;
+import kh.edu.istad.moviebooking.domain.enums.ConcessionOrderType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +24,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByTicketQrToken(UUID uuid);
 
     Page<Booking> findAllByUserUuid(UUID userUuid, Pageable pageable);
+
+    List<Booking> findAllByUserIdAndStatusOrderByCreatedAtDesc(
+            Long userId,
+            BookingStatus status
+    );
+
+
 }

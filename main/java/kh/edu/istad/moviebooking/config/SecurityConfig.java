@@ -119,7 +119,15 @@ public class SecurityConfig {
                         // =========================
                         // PUBLIC AUTH
                         // =========================
-
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/payments/*/qr"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/auth/register",
@@ -149,7 +157,8 @@ public class SecurityConfig {
                                 "/api/v1/movies/**",
                                 "/api/v1/showtimes/**",
                                 "/api/v1/halls/**",
-                                "/api/v1/seats/**"
+                                "/api/v1/seats/**",
+                                "/api/v1/concessions/**"
                         )
                         .permitAll()
 
@@ -247,7 +256,40 @@ public class SecurityConfig {
                                 "STAFF",
                                 "ADMIN"
                         )
+                        .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/v1/concessions/**"
+                                ).hasAnyRole("STAFF", "ADMIN")
 
+                                .requestMatchers(
+                                        HttpMethod.PATCH,
+                                        "/api/v1/concessions/**"
+                                ).hasAnyRole("STAFF", "ADMIN")
+
+                                .requestMatchers(
+                                        HttpMethod.DELETE,
+                                        "/api/v1/concessions/**"
+                                ).hasAnyRole("STAFF", "ADMIN")
+                                .requestMatchers(
+                                        HttpMethod.DELETE,
+                                        "/api/v1/concessions/**"
+                                ).hasAnyRole("STAFF", "ADMIN")
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/uploads/**"
+                                ).permitAll()
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/v1/concessions/**"
+                                ).hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(
+                                "/docs",
+                                "/docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
 
                         // =========================
                         // EVERYTHING ELSE

@@ -1,6 +1,7 @@
 package kh.edu.istad.moviebooking.features.payment;
 
 import kh.edu.istad.moviebooking.domain.Payment;
+import kh.edu.istad.moviebooking.domain.enums.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -22,4 +23,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "booking.showtime.hall"
     })
     Page<Payment> findAllByBookingUserUuid(UUID userUuid, Pageable pageable);
+
+    boolean existsByBookingUuidAndStatus(UUID bookingUuid, PaymentStatus status);
 }

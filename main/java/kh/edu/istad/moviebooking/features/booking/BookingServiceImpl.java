@@ -9,6 +9,7 @@ import kh.edu.istad.moviebooking.features.auth.CurrentUserService;
 import kh.edu.istad.moviebooking.features.booking.dto.BookingResponse;
 import kh.edu.istad.moviebooking.features.booking.dto.CreateBookingRequest;
 import kh.edu.istad.moviebooking.features.common.PageResponse;
+import kh.edu.istad.moviebooking.features.concession.dto.EligibleConcessionBookingResponse;
 import kh.edu.istad.moviebooking.features.seat.SeatRealtimeService;
 import kh.edu.istad.moviebooking.features.seat.SeatRepository;
 import kh.edu.istad.moviebooking.features.seatHold.SeatHoldService;
@@ -42,7 +43,6 @@ public class BookingServiceImpl implements BookingService {
     private final ShowTimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
     private final SeatReservationRepository seatReservationRepository;
-    private final UserRepository userRepository;
 
     //    mapper
     private final BookingMapper bookingMapper;
@@ -298,5 +298,7 @@ public class BookingServiceImpl implements BookingService {
             seatReservationRepository.deleteAllByBookingUuid(booking.getUuid());
         }
     }
+
+
 
 }

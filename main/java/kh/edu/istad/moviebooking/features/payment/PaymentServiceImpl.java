@@ -16,6 +16,7 @@ import kh.edu.istad.moviebooking.features.bakong.BakongKhqrService;
 import kh.edu.istad.moviebooking.features.bakong.dto.BakongTransactionData;
 import kh.edu.istad.moviebooking.features.booking.BookingRepository;
 import kh.edu.istad.moviebooking.features.common.PageResponse;
+import kh.edu.istad.moviebooking.features.concession.ConcessionOrderService;
 import kh.edu.istad.moviebooking.features.payment.dto.PaymentHistoryResponse;
 import kh.edu.istad.moviebooking.features.payment.dto.PaymentResponse;
 import kh.edu.istad.moviebooking.features.ticket.TicketService;
@@ -50,6 +51,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final BakongProperties bakongProperties;
 
     private final CurrentUserService currentUserService;
+
+    private final ConcessionOrderService concessionOrderService;
 
 
     @Override
@@ -127,16 +130,23 @@ public class PaymentServiceImpl implements PaymentService {
 
         payment.setStatus(PaymentStatus.SUCCESS);
 
-        payment.setTransactionReference("TEST-" + UUID.randomUUID());
+        payment.setTransactionReference(
+                "TEST-" + UUID.randomUUID()
+        );
 
         payment.setPaidAt(LocalDateTime.now());
 
         booking.setStatus(BookingStatus.CONFIRMED);
 
+        concessionOrderService.markPaidByBooking(
+                booking.getUuid()
+        );
+
         awardPoints(payment, booking);
 
-// Only now generate tickets
-        ticketService.generateTicketsForBooking(booking.getUuid());
+        ticketService.generateTicketsForBooking(
+                booking.getUuid()
+        );
 
         paymentRepository.saveAndFlush(payment);
         bookingRepository.saveAndFlush(booking);
@@ -193,8 +203,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Booking booking = payment.getBooking();
 
-        if (payment.getStatus() == PaymentStatus.SUCCESS
-        ) {
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
             return paymentMapper.toPaymentResponse(payment);
         }
 
@@ -235,7 +244,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         booking.setStatus(BookingStatus.CONFIRMED);
 
-        // Your existing cinema ticket generation
+        concessionOrderService.markPaidByBooking(booking.getUuid());
+
+        awardPoints(payment, booking);
+
         ticketService.generateTicketsForBooking(booking.getUuid());
 
         paymentRepository.saveAndFlush(payment);

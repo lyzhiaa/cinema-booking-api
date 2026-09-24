@@ -17,4 +17,5 @@ public interface BookingService {
     PageResponse<BookingResponse> getMyBookings(int page, int size);
 
     void expirePendingBookings();
+
 }

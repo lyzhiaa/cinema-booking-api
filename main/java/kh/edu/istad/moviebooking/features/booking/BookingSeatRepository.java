@@ -1,5 +1,6 @@
 package kh.edu.istad.moviebooking.features.booking;
 
+import kh.edu.istad.moviebooking.domain.Booking;
 import kh.edu.istad.moviebooking.domain.BookingSeat;
 import kh.edu.istad.moviebooking.domain.enums.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +18,6 @@ public interface BookingSeatRepository extends JpaRepository<BookingSeat, Long> 
             UUID seatUuid,
             Collection<BookingStatus> statuses
     );
+
+
 }

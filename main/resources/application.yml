@@ -1,6 +1,8 @@
 spring:
   application:
     name: movie-booking
+#  profiles:
+#    active: prod
 
   datasource:
     driver-class-name: org.postgresql.Driver
@@ -22,6 +24,11 @@ spring:
       port: 6379
       database: 0
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 jwt:
   secret: ${JWT_SECRET}
   issuer: movie-booking-api
@@ -35,6 +42,9 @@ bakong:
   account-name: ${BAKONG_ACCOUNT_NAME}
   currency: USD
 
+springdoc:
+  swagger-ui:
+    path: /docs
 
 tmdb:
   base-url: https://api.themoviedb.org/3
