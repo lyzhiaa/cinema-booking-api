@@ -138,15 +138,11 @@ public class PaymentServiceImpl implements PaymentService {
 
         booking.setStatus(BookingStatus.CONFIRMED);
 
-        concessionOrderService.markPaidByBooking(
-                booking.getUuid()
-        );
+        concessionOrderService.markPaidByBooking(booking.getUuid());
 
         awardPoints(payment, booking);
 
-        ticketService.generateTicketsForBooking(
-                booking.getUuid()
-        );
+        ticketService.generateTicketsForBooking(booking.getUuid());
 
         paymentRepository.saveAndFlush(payment);
         bookingRepository.saveAndFlush(booking);
